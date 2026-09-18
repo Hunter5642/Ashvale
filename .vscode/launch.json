@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
       {
-        "name": "C#: TitleScreen Debug",
+        "name": "C#: Ashvale Debug",
         "type": "dotnet",
         "request": "launch",
-        "projectPath": "${workspaceFolder}/TitleScreen.csproj"
+        "projectPath": "${workspaceFolder}/Ashvale.csproj"
       }
     ],
   }

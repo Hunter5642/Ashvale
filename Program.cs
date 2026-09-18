@@ -1,2 +1,2 @@
-﻿using var game = new TitleScreen.TitleScreenProject();
+﻿using var game = new Ashvale.AshvaleGame();
 game.Run();
