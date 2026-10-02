@@ -56,18 +56,22 @@ public class CoinSprite
     private const float FIRST_COIN_HEIGHT = 40;
 
     /// <summary>
-    /// How far the coin has to land from the knight's body, so it never turns up on top of him
-    /// the instant he grabs the last one
+    /// How far across the screen the coin has to land from the middle of the knight. Only
+    /// the sideways distance counts, so a coin can never turn up right above him where a
+    /// jump on the spot would grab it: he always has to run a good way for the next one
     /// </summary>
-    private const float MIN_KNIGHT_DISTANCE = 100;
+    private const float MIN_KNIGHT_DISTANCE = 350;
 
     /// <summary>
-    /// How many spots to try before settling for the last one. The knight only rules out a
-    /// couple hundred pixels of a 1200 pixel screen, so a few rolls always find room
+    /// How many spots to try before settling for the last one. Even with the knight in the
+    /// middle of the screen, over a quarter of the spots are far enough away, so a few
+    /// rolls always find one
     /// </summary>
     private const int MAX_ATTEMPTS = 50;
 
-    /// <summary>The game's random number generator, for picking the next spot</summary>
+    /// <summary>
+    /// The game's random number generator, for picking the next spot
+    /// </summary>
     private readonly MathHelper.Random random;
 
     private Texture2D texture;
@@ -78,11 +82,13 @@ public class CoinSprite
 
     private Vector2 position;
 
-    /// <summary>The bounding volume of the coin</summary>
+    /// <summary>
+    /// The bounding volume of the coin
+    /// </summary>
     public BoundingCircle Bounds => new BoundingCircle(position, RADIUS);
 
     /// <summary>
-    /// Whether the coin has been picked up.  A collected coin isn't drawn, and moving it to a
+    /// Whether the coin has been picked up. A collected coin isn't drawn, and moving it to a
     /// new spot brings it back
     /// </summary>
     public bool Collected { get; set; }
@@ -95,12 +101,11 @@ public class CoinSprite
     {
         this.random = random;
 
-        // the game moves it again when play starts; this just keeps it somewhere sane until then
         MoveToRightEdge();
     }
 
     /// <summary>
-    /// Loads the coin sprite sheet using the provided ContentManager
+    /// Loads the coin sprite sheet using the ContentManager
     /// </summary>
     /// <param name="content">The ContentManager to load with</param>
     public void LoadContent(ContentManager content)
@@ -109,7 +114,7 @@ public class CoinSprite
     }
 
     /// <summary>
-    /// Puts the coin at the right-hand end of the screen, just off the ground.  Every run
+    /// Puts the coin at the right-hand end of the screen, just off the ground. Every run
     /// starts its first coin here, so the opening move is always a run to the right
     /// </summary>
     public void MoveToRightEdge()
@@ -120,7 +125,7 @@ public class CoinSprite
 
     /// <summary>
     /// Moves the coin to a new random spot within the knight's reach, but at least
-    /// MIN_KNIGHT_DISTANCE pixels away from him, so he always has to travel for it
+    /// MIN_KNIGHT_DISTANCE pixels to his left or right, so he always has to travel for it
     /// </summary>
     /// <param name="knight">The knight's bounding box, the spot has to stay clear of</param>
     public void MoveToRandomSpot(BoundingRectangle knight)
@@ -131,23 +136,22 @@ public class CoinSprite
                 random.NextFloat(SIDE_MARGIN, AshvaleGame.WINDOW_WIDTH - SIDE_MARGIN),
                 AshvaleGame.GROUND_Y - random.NextFloat(MIN_HEIGHT, MAX_HEIGHT));
 
-            if (DistanceFrom(knight) >= MIN_KNIGHT_DISTANCE) break;
+            if (SidewaysDistanceFrom(knight) >= MIN_KNIGHT_DISTANCE) break;
         }
 
         Collected = false;
     }
 
     /// <summary>
-    /// How far the coin sits from the nearest point of a bounding box, using the same
-    /// nearest-point trick CollisionHelper uses for a circle against a rectangle
+    /// How far the coin sits to the left or right of the middle of a bounding box,
+    /// ignoring how high or low it is
     /// </summary>
     /// <param name="box">The box to measure to</param>
-    /// <returns>The distance in pixels, or 0 if the coin is inside the box</returns>
-    private float DistanceFrom(BoundingRectangle box)
+    /// <returns>The distance across the screen in pixels</returns>
+    private float SidewaysDistanceFrom(BoundingRectangle box)
     {
-        float nearestX = MathHelper.Clamp(position.X, box.Left, box.Right);
-        float nearestY = MathHelper.Clamp(position.Y, box.Top, box.Bottom);
-        return Vector2.Distance(position, new Vector2(nearestX, nearestY));
+        float boxMiddle = box.X + box.Width / 2;
+        return System.Math.Abs(position.X - boxMiddle);
     }
 
     /// <summary>

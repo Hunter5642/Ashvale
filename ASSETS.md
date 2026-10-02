@@ -9,6 +9,13 @@ This file lists all assets used in the game, with their provenance and license.
 |Content/knight_leftleg.png|ChiliGames - [Knight & Dragon (Knight Sprite)](https://opengameart.org/content/knight-dragon-knight-sprite) on OpenGameArt.org|CC0 / Public Domain|
 |Content/knight_rightarm.png|ChiliGames - [Knight & Dragon (Knight Sprite)](https://opengameart.org/content/knight-dragon-knight-sprite) on OpenGameArt.org|CC0 / Public Domain|
 |Content/knight_rightleg.png|ChiliGames - [Knight & Dragon (Knight Sprite)](https://opengameart.org/content/knight-dragon-knight-sprite) on OpenGameArt.org|CC0 / Public Domain|
-|Content/MedievalSharp/MedievalSharp-Regular.ttf|wmk69 - [MedievalSharp](https://fonts.google.com/specimen/MedievalSharp) on Google Fonts|SIL Open Font License 1.1|
+|Content/MedievalSharp/MedievalSharp-Regular.ttf (used by medievalsharp.spritefont and medievalsharp_small.spritefont)|wmk69 - [MedievalSharp](https://fonts.google.com/specimen/MedievalSharp) on Google Fonts|SIL Open Font License 1.1|
 |Content/coins.png|puddin - [Rotating Coin](https://opengameart.org/content/rotating-coin) on OpenGameArt.org|CC0 / Public Domain|
 |Content/rock_round.png|Viktor Hahn - [Rock](https://opengameart.org/content/rock-0) on OpenGameArt.org|[CC-BY 4.0](http://creativecommons.org/licenses/by/4.0/)|
+|Content/music.wav|Made by AI|None|
+|Content/coin.wav|Made by AI|None|
+|Content/jump.wav|Made by AI|None|
+|Content/hit.wav|Made by AI|None|
+|Content/eruption.wav|Made by AI|None|
+|Content/win.wav|Made by AI|None|
+|Content/click.wav|Made by AI|None|

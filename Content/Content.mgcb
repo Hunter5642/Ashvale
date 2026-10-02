@@ -112,6 +112,14 @@
 /processorParam:Version=3.8.5.1
 /build:medievalsharp.spritefont
 
+#begin medievalsharp_small.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/processorParam:Version=3.8.5.1
+/build:medievalsharp_small.spritefont
+
 
 #begin coins.png
 /importer:TextureImporter
@@ -138,4 +146,46 @@
 /processorParam:TextureFormat=Color
 /processorParam:Version=3.8.5.1
 /build:rock_round.png
+
+#begin coin.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:coin.wav
+
+#begin jump.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:jump.wav
+
+#begin hit.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:hit.wav
+
+#begin eruption.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:eruption.wav
+
+#begin win.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:win.wav
+
+#begin music.wav
+/importer:WavImporter
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:music.wav
+
+#begin click.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:click.wav
 

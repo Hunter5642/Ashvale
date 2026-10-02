@@ -64,10 +64,14 @@ public class KnightSprite
 
     private bool movingDown = false;
 
-    /// <summary>How fast the knight is moving, in pixels per second.  Only Y is used so far</summary>
+    /// <summary>
+    /// How fast the knight is moving
+    /// </summary>
     private Vector2 velocity;
 
-    /// <summary>True while the knight is standing on the ground, so he can't jump in midair</summary>
+    /// <summary>
+    /// True while the knight is standing on the ground, so he can't jump in midair
+    /// </summary>
     private bool onGround;
 
     /// <summary>
@@ -82,18 +86,18 @@ public class KnightSprite
     public float Scale { get; set; } = TITLE_SCALE;
 
     /// <summary>
-    /// Which way the knight is looking. The artwork faces left, so drawing him facing right
-    /// mirrors both the pictures and where each body part sits
+    /// Which way the knight is looking
     /// </summary>
     public bool FacingRight { get; set; }
 
     /// <summary>
-    /// Whether the knight is drifting up and down on the title screen. Set this false
-    /// when the game starts so gravity takes over
+    /// Whether the knight is drifting up and down on the title screen
     /// </summary>
     public bool Bobbing { get; set; } = true;
 
-    /// <summary>The bounding volume of the knight, which follows Position and the way he faces</summary>
+    /// <summary>
+    /// The bounding volume of the knight, which follows Position and the way he faces
+    /// </summary>
     public BoundingRectangle Bounds => new BoundingRectangle(
         Position + new Vector2(FacingRight ? -(BOUNDS_X + BOUNDS_WIDTH) : BOUNDS_X, BOUNDS_Y) * Scale,
         BOUNDS_WIDTH * Scale,
@@ -120,6 +124,22 @@ public class KnightSprite
     }
 
     /// <summary>
+    /// Puts the knight back the way he looks on the title screen: full size, facing
+    /// right, and bobbing gently at the given spot
+    /// </summary>
+    /// <param name="position">Where to put him</param>
+    public void ReturnToTitle(Vector2 position)
+    {
+        Position = position;
+        Scale = TITLE_SCALE;
+        FacingRight = true;
+        Bobbing = true;
+        bobTimer = 0;
+        movingDown = false;
+        velocity = Vector2.Zero;
+    }
+
+    /// <summary>
     /// Stands the knight on the ground at the given X, still and ready to play
     /// </summary>
     /// <param name="x">Where along the ground to put him</param>
@@ -133,13 +153,15 @@ public class KnightSprite
     /// <summary>
     /// Starts a jump, but only if the knight is standing on the ground
     /// </summary>
-    public void Jump()
+    /// <returns>Whether the knight actually left the ground</returns>
+    public bool Jump()
     {
-        if (!onGround) return;
+        if (!onGround) return false;
 
         // Y grows downward, so an upward jump is a negative velocity
         velocity.Y = -JUMP_SPEED;
         onGround = false;
+        return true;
     }
 
     /// <summary>
@@ -152,17 +174,14 @@ public class KnightSprite
 
         if (Bobbing)
         {
-            // update the bob timer
             bobTimer += gameTime.ElapsedGameTime.TotalSeconds;
 
-            // reverse direction every 1.2 seconds
             if (bobTimer > BOB_INTERVAL)
             {
                 movingDown = !movingDown;
                 bobTimer -= BOB_INTERVAL;
             }
 
-            // move the knight in the direction he is currently drifting
             if (movingDown)
                 Position += new Vector2(0, 1) * BOB_SPEED * t;
             else
@@ -217,7 +236,7 @@ public class KnightSprite
         if (FacingRight)
         {
             // A part covers offset.X to offset.X + Width, so mirroring it about Position puts
-            // it at -(offset.X + Width).  Flipping the artwork without this would scatter the
+            // it at -(offset.X + Width). Flipping the artwork without this would scatter the
             // parts, because each picture would mirror where it stands instead of swapping sides
             offset.X = -(offset.X + texture.Width);
             effects = SpriteEffects.FlipHorizontally;
