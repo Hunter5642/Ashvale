@@ -36,6 +36,9 @@ next one turns up somewhere else, always a good run away and usually high enough
 that you have to jump for it. Rocks fall from the sky the whole time, and a single
 hit ends the run.
 
+The run starts with 3 rocks falling. Every coin you grab angers the volcano: it rumbles,
+throws up a shower of embers, and another rock joins the fall, up to 7 by the last coin.
+
 ## The world
 
 Ashvale is three screens wide, and the camera scrolls to follow the knight. The map

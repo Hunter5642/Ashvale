@@ -42,10 +42,18 @@ public class AshvaleGame : Game
     private const double ERUPTION_INTERVAL = 0.25;
 
     /// <summary>
-    /// How many rocks fall at once, how long the knight gets to move before the first one
-    /// arrives, and how far apart the rest follow
+    /// How many rocks fall at once at the start of a run, how many more join for every coin
+    /// collected, and the most there can ever be. The run starts gentle and gets busier
+    /// toward the last coin
     /// </summary>
-    private const int ROCK_COUNT = 5;
+    private const int STARTING_ROCKS = 3;
+    private const int ROCKS_PER_COIN = 1;
+    private const int MAX_ROCKS = 7;
+
+    /// <summary>
+    /// How long the knight gets to move before the first rock arrives, and how far apart
+    /// the rest follow
+    /// </summary>
     private const double DROP_DELAY = 1.0;
     private const double DROP_INTERVAL = 0.75;
 
@@ -191,7 +199,8 @@ public class AshvaleGame : Game
           "Only one coin is out at a time, and the land stretches well past the\n" +
           "screen. Follow the map at the top to find it, and jump for the high ones." },
         { "Winning and Losing",
-          $"Collect all {COIN_GOAL} coins to win. A single hit from a falling rock ends the run." }
+          $"Collect all {COIN_GOAL} coins to win. A single hit from a falling rock ends the run.\n" +
+          "Every coin you grab angers the volcano, and another rock joins the fall." }
     };
 
     private State gameState = State.Title;
@@ -271,14 +280,15 @@ public class AshvaleGame : Game
 
         controlsButton = new Button("Controls", WINDOW_WIDTH / 2, 230);
         howToPlayButton = new Button("How to Play", WINDOW_WIDTH / 2, 320);
-        backButton = new Button("Back", WINDOW_WIDTH / 2, 490);
+        backButton = new Button("Back", WINDOW_WIDTH / 2, 515);
 
         playAgainButton = new Button("Play Again", WINDOW_WIDTH / 2, 300);
         mainMenuButton = new Button("Main Menu", WINDOW_WIDTH / 2, 390);
 
         coin = new CoinSprite(random);
 
-        boulders = new BoulderSprite[ROCK_COUNT];
+        // every rock the run could ever need is made up front, and they join in as coins are collected
+        boulders = new BoulderSprite[MAX_ROCKS];
         for (int i = 0; i < boulders.Length; i++) boulders[i] = new BoulderSprite(random);
 
         eruptions = new EruptionSprite[ERUPTION_COUNT];
@@ -491,14 +501,25 @@ public class AshvaleGame : Game
             camera.Follow(knight.Position.X, gameTime);
         }
 
-        // After a second of free movement, rocks begin falling, one every DROP_INTERVAL.
-        // Each one recycles itself from then on, so this only has to start them off
-        if (playTimer > DROP_DELAY && droppedRocks < boulders.Length)
+        // After a second of free movement, rocks begin falling, one every DROP_INTERVAL, until
+        // as many are falling as the coins collected so far allow. Each one recycles itself from
+        // then on, so this only has to start them off
+        if (playTimer > DROP_DELAY && droppedRocks < RocksAllowed())
         {
             dropTimer += gameTime.ElapsedGameTime.TotalSeconds;
             if (droppedRocks == 0 || dropTimer > DROP_INTERVAL)
             {
                 boulders[droppedRocks].FallFromSky(camera.ViewLeft, camera.ViewRight);
+
+                // a rock that joins because of a coin gets announced with a rumble from the
+                // volcano, so the player can tell the game just got harder
+                if (droppedRocks >= STARTING_ROCKS)
+                {
+                    embers.Burst(NearestVolcanoMouth());
+                    eruptionSound.Play(0.5f, 0, 0);
+                    camera.Shake(3, 0.25f);
+                }
+
                 droppedRocks++;
                 dropTimer = 0;
             }
@@ -561,6 +582,32 @@ public class AshvaleGame : Game
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// How many rocks should be falling, given how many coins have been collected
+    /// </summary>
+    /// <returns>The number of rocks allowed in the air</returns>
+    private int RocksAllowed()
+    {
+        return System.Math.Min(STARTING_ROCKS + coinsCollected * ROCKS_PER_COIN, MAX_ROCKS);
+    }
+
+    /// <summary>
+    /// Finds the volcano closest to the middle of the screen, so the rumble comes from one
+    /// the player can see
+    /// </summary>
+    /// <returns>That volcano's mouth, in background coordinates</returns>
+    private Vector2 NearestVolcanoMouth()
+    {
+        // the background scrolls at half speed, so the middle of the screen is somewhere
+        // else in background coordinates than it is in the world
+        float middle = camera.Position.X * ParallaxBackground.PARALLAX + WINDOW_WIDTH / 2f;
+
+        Vector2 nearest = ParallaxBackground.VolcanoMouths[0];
+        foreach (var mouth in ParallaxBackground.VolcanoMouths)
+            if (System.Math.Abs(mouth.X - middle) < System.Math.Abs(nearest.X - middle)) nearest = mouth;
+        return nearest;
     }
 
     /// <summary>
