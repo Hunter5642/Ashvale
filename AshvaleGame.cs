@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using Ashvale.Collisions;
+using Ashvale.Particles;
 
 namespace Ashvale;
 
@@ -25,6 +26,12 @@ public class AshvaleGame : Game
     /// </summary>
     public const int WINDOW_WIDTH = 1200;
     public const int WINDOW_HEIGHT = 600;
+
+    /// <summary>
+    /// How wide the world the knight can run around in is. It is three screens across, and
+    /// the camera scrolls to follow him
+    /// </summary>
+    public const int WORLD_WIDTH = WINDOW_WIDTH * 3;
     private const int COIN_GOAL = 5;
     public const int GROUND_Y = 550;
 
@@ -68,10 +75,27 @@ public class AshvaleGame : Game
     private const float MUSIC_VOLUME = 0.5f;
     private const float MUSIC_DUCKED_VOLUME = 0.2f;
 
+    /// <summary>
+    /// How far the camera zooms in on the volcano while it erupts at the start of a run,
+    /// and on the knight when a run ends
+    /// </summary>
+    private const float INTRO_ZOOM = 1.4f;
+    private const float ENDING_ZOOM = 1.2f;
+
+    /// <summary>
+    /// How often a firework goes off once the run is won
+    /// </summary>
+    private const double FIREWORK_INTERVAL = 0.35;
+
+    /// <summary>
+    /// The strip across the top of the screen that shows the whole world, where the knight
+    /// is in it, and where the coin is
+    /// </summary>
+    private static readonly Rectangle MINIMAP = new Rectangle(WINDOW_WIDTH / 2 - 200, 72, 400, 10);
+
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
 
-    private Texture2D background;
     private SpriteFont medievalSharp;
     /// <summary>
     /// A smaller copy of the same font, for the longer text on the settings screens
@@ -82,6 +106,21 @@ public class AshvaleGame : Game
     private BoulderSprite[] boulders;
     private EruptionSprite[] eruptions;
 
+    private Camera camera;
+    private ParallaxBackground background;
+    private Ground ground;
+
+    /// <summary>
+    /// The particle effects. The game draws these itself, in among the other layers, rather
+    /// than letting them draw on top of everything after the menus
+    /// </summary>
+    private EmberParticleSystem embers;
+    private AshParticleSystem ash;
+    private DustParticleSystem dust;
+    private DebrisParticleSystem debris;
+    private ExplosionParticleSystem explosions;
+    private SparkleParticleSystem sparkles;
+
     private Song music;
     private SoundEffect coinSound;
     private SoundEffect jumpSound;
@@ -90,7 +129,7 @@ public class AshvaleGame : Game
     private SoundEffect winSound;
     private SoundEffect clickSound;
 
-    /// <summary
+    /// <summary>
     /// The buttons on the title screen
     /// </summary>
     private Button startButton;
@@ -109,7 +148,7 @@ public class AshvaleGame : Game
     /// </summary>
     private Button backButton;
 
-    /// <summary
+    /// <summary>
     /// The buttons shown once a run is won or lost
     /// </summary>
     private Button playAgainButton;
@@ -149,8 +188,8 @@ public class AshvaleGame : Game
         { "What Happens",
           "Each run opens with the volcano throwing up a burst of rocks.\n" +
           "Once it settles you can move, and soon rocks rain from the sky.\n" +
-          "Only one coin is out at a time. Grab it and the next appears\n" +
-          "somewhere else, often high enough that you must jump for it." },
+          "Only one coin is out at a time, and the land stretches well past the\n" +
+          "screen. Follow the map at the top to find it, and jump for the high ones." },
         { "Winning and Losing",
           $"Collect all {COIN_GOAL} coins to win. A single hit from a falling rock ends the run." }
     };
@@ -178,6 +217,11 @@ public class AshvaleGame : Game
     /// </summary>
     private bool hasMoved;
 
+    /// <summary>
+    /// Counts down to the next victory firework
+    /// </summary>
+    private double fireworkTimer;
+
     private MathHelper.Random random {get; init;} = new();
 
     protected KeyboardState currentKeyboardState;
@@ -198,6 +242,25 @@ public class AshvaleGame : Game
         _graphics.PreferredBackBufferWidth = WINDOW_WIDTH;
         _graphics.PreferredBackBufferHeight = WINDOW_HEIGHT;
         _graphics.ApplyChanges();
+
+        camera = new Camera(random);
+        Services.AddService(camera);
+
+        background = new ParallaxBackground();
+        ground = new Ground();
+
+        embers = new EmberParticleSystem(this, ParallaxBackground.VolcanoMouths);
+        ash = new AshParticleSystem(this);
+        dust = new DustParticleSystem(this, 20);
+        debris = new DebrisParticleSystem(this, 20);
+        explosions = new ExplosionParticleSystem(this, 4);
+        sparkles = new SparkleParticleSystem(this, 20);
+
+        foreach (ParticleSystem system in new ParticleSystem[] { embers, ash, dust, debris, explosions, sparkles })
+        {
+            system.Visible = false;
+            Components.Add(system);
+        }
 
         knight = new KnightSprite();
         knight.ReturnToTitle(new Vector2(TITLE_KNIGHT_X, TITLE_KNIGHT_Y));
@@ -228,7 +291,8 @@ public class AshvaleGame : Game
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-        background = Content.Load<Texture2D>("background");
+        background.LoadContent(Content);
+        ground.LoadContent(Content);
         medievalSharp = Content.Load<SpriteFont>("medievalsharp");
         medievalSharpSmall = Content.Load<SpriteFont>("medievalsharp_small");
         knight.LoadContent(Content);
@@ -268,6 +332,8 @@ public class AshvaleGame : Game
             SoundEffect.MasterVolume = MediaPlayer.IsMuted ? 0 : 1;
         }
 
+        camera.Update(gameTime);
+
         // Each screen only listens to its own buttons. A click that changes the screen is
         // over by the next frame, so it never presses a button on the new screen too
         switch (gameState)
@@ -298,6 +364,7 @@ public class AshvaleGame : Game
             case State.Won:
                 // the knight keeps falling if he was mid-jump when the run ended
                 knight.Update(gameTime);
+                if (gameState == State.Won) UpdateFireworks(gameTime);
                 if (Clicked(playAgainButton)) StartGame();
                 else if (Clicked(mainMenuButton)) ReturnToTitle();
                 break;
@@ -330,6 +397,7 @@ public class AshvaleGame : Game
         gameState = State.Title;
         knight.ReturnToTitle(new Vector2(TITLE_KNIGHT_X, TITLE_KNIGHT_Y));
         MediaPlayer.Volume = MUSIC_VOLUME;
+        camera.Reset();
     }
 
     /// <summary>
@@ -350,8 +418,14 @@ public class AshvaleGame : Game
         knight.PlaceOnGround(KNIGHT_START_X);
 
         coinsCollected = 0;
-        // the first coin of a run is always at the far right, so the opening move is a run for it
-        coin.MoveToRightEdge();
+        // the first coin of a run is always off to the right, so the opening move is a run for it
+        coin.MoveToFirstSpot();
+
+        // Back to the start of the world, zoomed in on the volcano for the eruption. The
+        // background scrolls at half speed but the camera starts at 0, so the volcano's
+        // background position is also where it is on screen
+        camera.Reset();
+        camera.SnapZoom(INTRO_ZOOM, ParallaxBackground.VolcanoMouths[0]);
 
         foreach (var boulder in boulders) boulder.Reset();
         foreach (var eruption in eruptions) eruption.Reset();
@@ -380,9 +454,14 @@ public class AshvaleGame : Game
             if (eruptionTimer > ERUPTION_INTERVAL)
             {
                 eruptions[eruptedRocks].Erupt();
+                embers.Burst(ParallaxBackground.VolcanoMouths[0]);
+                camera.Shake(3, 0.25f);
                 eruptionSound.Play();
                 eruptedRocks++;
                 eruptionTimer -= ERUPTION_INTERVAL;
+
+                // with the last rock thrown, pull back out to the whole scene
+                if (eruptedRocks == eruptions.Length) camera.TargetZoom = 1;
             }
         }
         else
@@ -408,6 +487,8 @@ public class AshvaleGame : Game
                 if (knight.Jump()) jumpSound.Play();
                 hasMoved = true;
             }
+
+            camera.Follow(knight.Position.X, gameTime);
         }
 
         // After a second of free movement, rocks begin falling, one every DROP_INTERVAL.
@@ -417,7 +498,7 @@ public class AshvaleGame : Game
             dropTimer += gameTime.ElapsedGameTime.TotalSeconds;
             if (droppedRocks == 0 || dropTimer > DROP_INTERVAL)
             {
-                boulders[droppedRocks].FallFromSky();
+                boulders[droppedRocks].FallFromSky(camera.ViewLeft, camera.ViewRight);
                 droppedRocks++;
                 dropTimer = 0;
             }
@@ -428,15 +509,33 @@ public class AshvaleGame : Game
         foreach (var boulder in boulders) boulder.Update(gameTime);
         foreach (var eruption in eruptions) eruption.Update(gameTime);
 
+        if (knight.JustLanded) dust.Burst(new Vector2(knight.Position.X, GROUND_Y));
+
+        // A rock that reaches the ground smashes into chips and dust and gives the screen a
+        // jolt, then goes back up to fall again over wherever the camera is now
+        foreach (var boulder in boulders)
+        {
+            if (!boulder.Landed) continue;
+
+            var impact = new Vector2(boulder.Position.X, GROUND_Y);
+            debris.Burst(impact);
+            dust.Burst(impact);
+            camera.Shake(1.5f, 0.15f);
+            boulder.FallFromSky(camera.ViewLeft, camera.ViewRight);
+        }
+
         // Grabbing the coin moves it somewhere new, until there are enough of them to win
         if (knight.Bounds.CollidesWith(coin.Bounds))
         {
             coinsCollected++;
+            sparkles.Burst(coin.Position, Color.Gold);
             if (coinsCollected >= COIN_GOAL)
             {
                 // the last coin is picked up rather than moved, so it vanishes with the win
                 coin.Collected = true;
                 gameState = State.Won;
+                ZoomInOnKnight();
+                fireworkTimer = 0;
                 MediaPlayer.Volume = MUSIC_DUCKED_VOLUME;
                 winSound.Play();
                 return;
@@ -453,21 +552,66 @@ public class AshvaleGame : Game
                 gameState = State.GameOver;
                 MediaPlayer.Volume = MUSIC_DUCKED_VOLUME;
                 hitSound.Play();
+
+                Vector2 knightCenter = KnightCenter();
+                explosions.PlaceExplosion(knightCenter);
+                debris.Burst(knightCenter);
+                camera.Shake(6, 0.4f);
+                ZoomInOnKnight();
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// The middle of the knight's collision box, in world coordinates
+    /// </summary>
+    private Vector2 KnightCenter()
+    {
+        var bounds = knight.Bounds;
+        return new Vector2(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2);
+    }
+
+    /// <summary>
+    /// Slowly closes in on the knight at the end of a run. The zoom works in screen
+    /// coordinates, so the knight's world position is turned into where he is on screen
+    /// </summary>
+    private void ZoomInOnKnight()
+    {
+        camera.ZoomFocus = KnightCenter() - camera.Position;
+        camera.TargetZoom = ENDING_ZOOM;
+    }
+
+    /// <summary>
+    /// Sets off a firework every so often over the screen while the win is showing
+    /// </summary>
+    /// <param name="gameTime">The game time</param>
+    private void UpdateFireworks(GameTime gameTime)
+    {
+        fireworkTimer -= gameTime.ElapsedGameTime.TotalSeconds;
+        if (fireworkTimer > 0) return;
+
+        fireworkTimer += FIREWORK_INTERVAL;
+        var where = new Vector2(random.NextFloat(camera.ViewLeft + 150, camera.ViewRight - 150),
+                                random.NextFloat(80, 300));
+        var colors = SparkleParticleSystem.FireworkColors;
+        sparkles.Burst(where, colors[(int)random.NextFloat(0, colors.Length - 0.01f)]);
     }
 
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.Black);
 
+        // The world is drawn first, through the camera, and the menus and text go on top of
+        // it in a batch of their own that the camera doesn't move
+        if (gameState is State.Title or State.Playing or State.GameOver or State.Won)
+            DrawScene(gameTime);
+
         _spriteBatch.Begin();
 
         switch (gameState)
         {
             case State.Title:
-                DrawScene(gameTime);
                 DrawCenteredText(medievalSharp, titleText, 30, Color.Gold);
                 startButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
                 settingsButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
@@ -494,15 +638,15 @@ public class AshvaleGame : Game
                 break;
 
             case State.Playing:
-                DrawScene(gameTime);
                 if (hasMoved)
                     DrawCenteredText(medievalSharp, $"Coins: {coinsCollected} / {COIN_GOAL}", 20, Color.Gold);
                 else
                     DrawCenteredText(medievalSharp, goalText, 20, Color.White);
+                DrawMinimap();
+                DrawCoinPointer(gameTime);
                 break;
 
             case State.GameOver:
-                DrawScene(gameTime);
                 DrawOverlay(Color.Black * 0.6f);
                 DrawCenteredText(medievalSharp, gameOverText, 170, Color.OrangeRed);
                 playAgainButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
@@ -510,7 +654,6 @@ public class AshvaleGame : Game
                 break;
 
             case State.Won:
-                DrawScene(gameTime);
                 DrawOverlay(Color.White * 0.5f);
                 DrawCenteredText(medievalSharp, winText, 170, Color.Gold);
                 playAgainButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
@@ -526,22 +669,83 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Draws the volcano background and the knight, plus the coin and rocks once a game
-    /// has started
+    /// Draws the world back to front through the camera. The background layer scrolls at
+    /// half speed with the volcano's embers on it, then the world layer scrolls at
+    /// full speed with the road, coin, rocks and knight, and the effects that happen around
+    /// him go over the top
     /// </summary>
     /// <param name="gameTime">The game time</param>
     private void DrawScene(GameTime gameTime)
     {
-        _spriteBatch.Draw(background, new Rectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT), Color.White);
+        // Background layer
+        _spriteBatch.Begin(transformMatrix: camera.GetTransform(ParallaxBackground.PARALLAX));
+        background.Draw(_spriteBatch);
+        if (gameState != State.Title)
+            foreach (var eruption in eruptions) eruption.Draw(gameTime, _spriteBatch);
+        _spriteBatch.End();
 
+        embers.Draw(gameTime);
+
+        // World layer
+        _spriteBatch.Begin(transformMatrix: camera.GetTransform());
+        ground.Draw(gameTime, _spriteBatch, whitePixel);
         if (gameState != State.Title)
         {
             coin.Draw(gameTime, _spriteBatch);
             foreach (var boulder in boulders) boulder.Draw(gameTime, _spriteBatch);
-            foreach (var eruption in eruptions) eruption.Draw(gameTime, _spriteBatch);
         }
-
         knight.Draw(gameTime, _spriteBatch);
+        _spriteBatch.End();
+
+        dust.Draw(gameTime);
+        debris.Draw(gameTime);
+        explosions.Draw(gameTime);
+        sparkles.Draw(gameTime);
+        ash.Draw(gameTime);
+    }
+
+    /// <summary>
+    /// Draws the whole world shrunk down to a strip, with the part on screen lit up, a
+    /// white mark for the knight and a gold one for the coin
+    /// </summary>
+    private void DrawMinimap()
+    {
+        float toMap = (float)MINIMAP.Width / WORLD_WIDTH;
+
+        _spriteBatch.Draw(whitePixel, MINIMAP, Color.Black * 0.5f);
+
+        var view = new Rectangle(MINIMAP.X + (int)(camera.ViewLeft * toMap), MINIMAP.Y,
+                                 (int)(WINDOW_WIDTH * toMap), MINIMAP.Height);
+        _spriteBatch.Draw(whitePixel, view, Color.White * 0.25f);
+
+        int coinX = MINIMAP.X + (int)(coin.Position.X * toMap);
+        _spriteBatch.Draw(whitePixel, new Rectangle(coinX - 3, MINIMAP.Y - 3, 6, MINIMAP.Height + 6), Color.Gold);
+
+        int knightX = MINIMAP.X + (int)(knight.Position.X * toMap);
+        _spriteBatch.Draw(whitePixel, new Rectangle(knightX - 2, MINIMAP.Y - 5, 4, MINIMAP.Height + 10), Color.White);
+    }
+
+    /// <summary>
+    /// When the coin is off the side of the screen, draws a pulsing arrow at that edge
+    /// pointing the way to it
+    /// </summary>
+    /// <param name="gameTime">The game time, which makes the arrow pulse</param>
+    private void DrawCoinPointer(GameTime gameTime)
+    {
+        if (coin.Collected) return;
+
+        bool left = coin.Position.X < camera.ViewLeft;
+        bool right = coin.Position.X > camera.ViewRight;
+        if (!left && !right) return;
+
+        string arrow = left ? "<" : ">";
+        Vector2 size = medievalSharp.MeasureString(arrow);
+        float nudge = 6 * (float)System.Math.Sin(gameTime.TotalGameTime.TotalSeconds * 6);
+        float x = left ? 20 + nudge : WINDOW_WIDTH - 20 - size.X - nudge;
+        var position = new Vector2(x, coin.Position.Y - size.Y / 2);
+
+        _spriteBatch.DrawString(medievalSharp, arrow, position + new Vector2(3, 3), Color.Black * 0.75f);
+        _spriteBatch.DrawString(medievalSharp, arrow, position, Color.Gold);
     }
 
     /// <summary>

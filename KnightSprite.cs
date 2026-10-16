@@ -75,6 +75,11 @@ public class KnightSprite
     private bool onGround;
 
     /// <summary>
+    /// True for the one frame the knight touches down from a jump, so the game can kick up dust
+    /// </summary>
+    public bool JustLanded { get; private set; }
+
+    /// <summary>
     /// The point the knight is built around
     /// Every body part is positioned relative to this
     /// </summary>
@@ -171,6 +176,7 @@ public class KnightSprite
     public void Update(GameTime gameTime)
     {
         float t = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        JustLanded = false;
 
         if (Bobbing)
         {
@@ -199,14 +205,15 @@ public class KnightSprite
         {
             Position.Y = GroundLine;
             velocity.Y = 0;
+            if (!onGround) JustLanded = true;
             onGround = true;
         }
 
-        // keep his collision box on screen, whichever way he is facing
+        // keep his collision box inside the world, whichever way he is facing
         float boxOffset = (FacingRight ? -(BOUNDS_X + BOUNDS_WIDTH) : BOUNDS_X) * Scale;
         Position.X = MathHelper.Clamp(Position.X,
                                       -boxOffset,
-                                      AshvaleGame.WINDOW_WIDTH - boxOffset - BOUNDS_WIDTH * Scale);
+                                      AshvaleGame.WORLD_WIDTH - boxOffset - BOUNDS_WIDTH * Scale);
     }
 
     /// <summary>

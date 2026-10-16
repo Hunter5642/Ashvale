@@ -22,7 +22,8 @@ public class EruptionSprite
     private const int FRAME_COLUMNS = 4;
 
     /// <summary>
-    /// How many frames the rolling animation has in total</summary>
+    /// How many frames the rolling animation has in total
+    /// </summary>
     private const int FRAME_COUNT = 12;
 
     /// <summary>
@@ -41,10 +42,6 @@ public class EruptionSprite
     /// </summary>
     private const float HALF_SIZE = FRAME_SIZE / 2f * SCALE;
 
-    /// <summary>
-    /// The mouth of the volcano in the background art, where the eruption comes from
-    /// </summary>
-    private static readonly Vector2 VOLCANO_MOUTH = new Vector2(910, 90);
 
     /// <summary>
     /// The game's random number generator, for throwing each rock a little differently
@@ -89,7 +86,9 @@ public class EruptionSprite
     /// </summary>
     public void Erupt()
     {
-        position = VOLCANO_MOUTH;
+        // the first volcano, the one on screen at the start of a run. Eruption rocks are drawn
+        // in the background layer, so this is a background position
+        position = ParallaxBackground.VolcanoMouths[0];
         velocity = new Vector2(0, -random.NextFloat(140, 260));
         Active = true;
     }

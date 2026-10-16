@@ -50,9 +50,10 @@ public class CoinSprite
     private const float MAX_HEIGHT = 275;
 
     /// <summary>
-    /// How high the first coin of a run sits. Low enough to walk into, so the opening grab
-    /// needs no jump
+    /// Where the first coin of a run sits. Low enough to walk into, so the opening grab
+    /// needs no jump, and far enough in that the camera has to scroll to reach it
     /// </summary>
+    private const float FIRST_COIN_X = 1700;
     private const float FIRST_COIN_HEIGHT = 40;
 
     /// <summary>
@@ -61,6 +62,12 @@ public class CoinSprite
     /// jump on the spot would grab it: he always has to run a good way for the next one
     /// </summary>
     private const float MIN_KNIGHT_DISTANCE = 350;
+
+    /// <summary>
+    /// The farthest across the world the coin can land from the knight, so the next coin is
+    /// never a slog from one end of the world to the other
+    /// </summary>
+    private const float MAX_KNIGHT_DISTANCE = 1600;
 
     /// <summary>
     /// How many spots to try before settling for the last one. Even with the knight in the
@@ -83,6 +90,11 @@ public class CoinSprite
     private Vector2 position;
 
     /// <summary>
+    /// Where the middle of the coin is
+    /// </summary>
+    public Vector2 Position => position;
+
+    /// <summary>
     /// The bounding volume of the coin
     /// </summary>
     public BoundingCircle Bounds => new BoundingCircle(position, RADIUS);
@@ -101,7 +113,7 @@ public class CoinSprite
     {
         this.random = random;
 
-        MoveToRightEdge();
+        MoveToFirstSpot();
     }
 
     /// <summary>
@@ -114,18 +126,19 @@ public class CoinSprite
     }
 
     /// <summary>
-    /// Puts the coin at the right-hand end of the screen, just off the ground. Every run
-    /// starts its first coin here, so the opening move is always a run to the right
+    /// Puts the coin past the right-hand edge of the first screen, just off the ground. Every
+    /// run starts its first coin here, so the opening move is always a run to the right
     /// </summary>
-    public void MoveToRightEdge()
+    public void MoveToFirstSpot()
     {
-        position = new Vector2(AshvaleGame.WINDOW_WIDTH - SIDE_MARGIN, AshvaleGame.GROUND_Y - FIRST_COIN_HEIGHT);
+        position = new Vector2(FIRST_COIN_X, AshvaleGame.GROUND_Y - FIRST_COIN_HEIGHT);
         Collected = false;
     }
 
     /// <summary>
-    /// Moves the coin to a new random spot within the knight's reach, but at least
-    /// MIN_KNIGHT_DISTANCE pixels to his left or right, so he always has to travel for it
+    /// Moves the coin to a new random spot within the knight's reach, between
+    /// MIN_KNIGHT_DISTANCE and MAX_KNIGHT_DISTANCE pixels to his left or right, so he always
+    /// has to travel for it, often off the edge of the screen
     /// </summary>
     /// <param name="knight">The knight's bounding box, the spot has to stay clear of</param>
     public void MoveToRandomSpot(BoundingRectangle knight)
@@ -133,10 +146,11 @@ public class CoinSprite
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++)
         {
             position = new Vector2(
-                random.NextFloat(SIDE_MARGIN, AshvaleGame.WINDOW_WIDTH - SIDE_MARGIN),
+                random.NextFloat(SIDE_MARGIN, AshvaleGame.WORLD_WIDTH - SIDE_MARGIN),
                 AshvaleGame.GROUND_Y - random.NextFloat(MIN_HEIGHT, MAX_HEIGHT));
 
-            if (SidewaysDistanceFrom(knight) >= MIN_KNIGHT_DISTANCE) break;
+            float distance = SidewaysDistanceFrom(knight);
+            if (distance >= MIN_KNIGHT_DISTANCE && distance <= MAX_KNIGHT_DISTANCE) break;
         }
 
         Collected = false;

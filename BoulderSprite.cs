@@ -6,9 +6,9 @@ using Ashvale.Collisions;
 namespace Ashvale;
 
 /// <summary>
-/// A rock falling out of the sky for the knight to dodge. It speeds up as it falls, and once
-/// it has left the screen it comes back down somewhere else, so there is always something in
-/// the air. The rocks thrown from the volcano at the start of a run are EruptionSprites.
+/// A rock falling out of the sky for the knight to dodge. It speeds up as it falls and smashes
+/// when it reaches the ground, and the game then drops it again somewhere over the part of
+/// the world the camera is looking at, so there is always something in the air. The rocks thrown from the volcano at the start of a run are EruptionSprites.
 /// </summary>
 public class BoulderSprite
 {
@@ -46,12 +46,12 @@ public class BoulderSprite
     /// <summary>
     /// How fast gravity pulls rocks down. Gentler than the knight's, so they arc slowly
     /// </summary>
-    private const float GRAVITY = 500;
+    private const float GRAVITY = 250;
 
     /// <summary>
     /// How fast a rock is already falling when it comes in from the top
     /// </summary>
-    private const float FALL_SPEED = 200;
+    private const float FALL_SPEED = 100;
 
     /// <summary>
     /// The game's random number generator, for drop points and drift
@@ -73,6 +73,17 @@ public class BoulderSprite
     /// can throw them one at a time instead of all at once
     /// </summary>
     public bool Active { get; private set; }
+
+    /// <summary>
+    /// True from the moment the rock hits the ground until it is dropped again, so the game
+    /// knows to smash it and send it back up
+    /// </summary>
+    public bool Landed { get; private set; }
+
+    /// <summary>
+    /// Where the middle of the rock is
+    /// </summary>
+    public Vector2 Position => position;
 
     /// <summary>
     /// The bounding volume of the rock
@@ -98,15 +109,20 @@ public class BoulderSprite
     }
 
     /// <summary>
-    /// Drops this rock in from above the top of the screen at a random spot
+    /// Drops this rock in from above the top of the screen, somewhere between two points in
+    /// the world. The game passes in the edges of the camera's view, so rocks always fall
+    /// where the knight can see them
     /// </summary>
-    public void FallFromSky()
+    /// <param name="left">The leftmost world X the rock can fall at</param>
+    /// <param name="right">The rightmost world X the rock can fall at</param>
+    public void FallFromSky(float left, float right)
     {
-        position = new Vector2(random.NextFloat(RADIUS, AshvaleGame.WINDOW_WIDTH - RADIUS), -RADIUS);
+        position = new Vector2(random.NextFloat(left + RADIUS, right - RADIUS), -RADIUS);
 
         // again, NextFloat won't go below 0, so the drift is shifted into range afterwards
         velocity = new Vector2(random.NextFloat(0, 80) - 40, FALL_SPEED);
         Active = true;
+        Landed = false;
     }
 
     /// <summary>
@@ -115,10 +131,11 @@ public class BoulderSprite
     public void Reset()
     {
         Active = false;
+        Landed = false;
     }
 
     /// <summary>
-    /// Moves the rock, spins it, and sends it back in from the sky once it leaves the screen
+    /// Moves the rock and spins it, until it hits the ground
     /// </summary>
     /// <param name="gameTime">The game time</param>
     public void Update(GameTime gameTime)
@@ -140,11 +157,11 @@ public class BoulderSprite
             animationTimer -= ANIMATION_SPEED;
         }
 
-        if (position.Y - RADIUS > AshvaleGame.WINDOW_HEIGHT
-            || position.X + RADIUS < 0
-            || position.X - RADIUS > AshvaleGame.WINDOW_WIDTH)
+        // it smashes once its middle is just into the road, which looks like it struck
+        if (position.Y + RADIUS * 0.5f >= AshvaleGame.GROUND_Y)
         {
-            FallFromSky();
+            Active = false;
+            Landed = true;
         }
     }
 
