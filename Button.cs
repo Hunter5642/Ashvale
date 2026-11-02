@@ -26,6 +26,11 @@ public class Button
     public Rectangle Bounds;
 
     /// <summary>
+    /// Whether the button can be pressed. A disabled button is greyed out and ignores the mouse
+    /// </summary>
+    public bool Enabled = true;
+
+    /// <summary>
     /// Creates a button centered on a point
     /// </summary>
     /// <param name="text">The label</param>
@@ -45,13 +50,15 @@ public class Button
     /// <param name="priorMouseState">The mouse last frame</param>
     public bool IsClicked(MouseState currentMouseState, MouseState priorMouseState)
     {
-        return Bounds.Contains(currentMouseState.Position)
+        return Enabled
+            && Bounds.Contains(currentMouseState.Position)
             && currentMouseState.LeftButton == ButtonState.Pressed
             && priorMouseState.LeftButton == ButtonState.Released;
     }
 
     /// <summary>
-    /// Draws the button, lit up in gold while the mouse is over it
+    /// Draws the button, lit up in gold while the mouse is over it, or greyed out if it is
+    /// disabled
     /// </summary>
     /// <param name="spriteBatch">The SpriteBatch to draw with</param>
     /// <param name="font">The font to write the label in</param>
@@ -59,15 +66,23 @@ public class Button
     /// <param name="mousePosition">Where the mouse is, to tell if it is over the button</param>
     public void Draw(SpriteBatch spriteBatch, SpriteFont font, Texture2D pixel, Point mousePosition)
     {
-        bool hovered = Bounds.Contains(mousePosition);
+        bool hovered = Enabled && Bounds.Contains(mousePosition);
 
-        spriteBatch.Draw(pixel, Bounds, hovered ? Color.Gold : Color.White * 0.7f);
+        Color outline = hovered ? Color.Gold : Color.White * 0.7f;
+        Color label = hovered ? Color.Gold : Color.White;
+        if (!Enabled)
+        {
+            outline = Color.White * 0.25f;
+            label = Color.Gray * 0.6f;
+        }
+
+        spriteBatch.Draw(pixel, Bounds, outline);
         Rectangle inside = Bounds;
         inside.Inflate(-BORDER, -BORDER);
         spriteBatch.Draw(pixel, inside, hovered ? new Color(40, 30, 10) : new Color(20, 20, 20));
 
         Vector2 size = font.MeasureString(Text);
         Vector2 position = new Vector2(Bounds.Center.X - size.X / 2, Bounds.Center.Y - size.Y / 2);
-        spriteBatch.DrawString(font, Text, position, hovered ? Color.Gold : Color.White);
+        spriteBatch.DrawString(font, Text, position, label);
     }
 }

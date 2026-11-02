@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ashvale.Particles;
 
 /// <summary>
-/// A fiery blast, from the particle system tutorial, for the moment a rock hits the knight.
+/// A fiery blast for the moment a rock hits the knight.
 /// The blobs are recolored from a white-hot core out to orange, and use additive blending
 /// so the middle of the blast, where they overlap most, burns brightest.
 /// </summary>

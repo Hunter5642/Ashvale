@@ -29,8 +29,7 @@ public class Camera
     private Vector2 shakeOffset;
 
     /// <summary>
-    /// The world position of the top-left corner of the screen, before zooming. This is the
-    /// same offset the parallax tutorial works out from the player's position
+    /// The world position of the top-left corner of the screen, before zooming
     /// </summary>
     public Vector2 Position;
 

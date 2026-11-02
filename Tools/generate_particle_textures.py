@@ -1,5 +1,5 @@
 """
-Generates the two particle textures the tutorial's art doesn't cover:
+Generates two of the particle textures:
 
   Content/smoke.png  - a lumpy, soft-edged white puff, used for the dust clouds. It is white
                        so the game can tint it, and lumpy so you can see it turn as it rotates

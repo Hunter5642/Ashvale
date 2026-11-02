@@ -4,8 +4,8 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ashvale.Particles;
 
 /// <summary>
-/// A burst of glittering sparks, built on the firework from the particle system tutorial.
-/// Collecting a coin gives off a gold burst, and winning sets off fireworks in every color.
+/// A burst of glittering sparks. Rescuing a villager gives off a gold burst, and winning sets
+/// off fireworks in every color.
 /// </summary>
 public class SparkleParticleSystem : ParticleSystem
 {

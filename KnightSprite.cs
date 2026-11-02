@@ -33,9 +33,11 @@ public class KnightSprite
     private const float GRAVITY = 2000;
 
     /// <summary>
-    /// How fast the knight leaves the ground when he jumps, in pixels per second
+    /// How fast the knight leaves the ground when he jumps, in pixels per second. His feet rise
+    /// about 240 pixels: enough to get from the road up onto a low ledge 200 pixels up, but not
+    /// straight onto a high ledge 320 pixels up
     /// </summary>
-    private const float JUMP_SPEED = 800;
+    private const float JUMP_SPEED = 1000;
 
     /// <summary>
     /// How far below Position the knight's feet are drawn, before scaling. His right leg is
@@ -109,10 +111,15 @@ public class KnightSprite
         BOUNDS_HEIGHT * Scale);
 
     /// <summary>
-    /// The Y value Position sits at when the knight is standing on the ground. Position is
+    /// The Y value Position sits at when the knight is standing on the road. Position is
     /// his anchor point, not his feet, so the ground line is his feet higher up
     /// </summary>
     private float GroundLine => AshvaleGame.GROUND_Y - FOOT_OFFSET * Scale;
+
+    /// <summary>
+    /// How far down the screen the knight's feet are
+    /// </summary>
+    private float Feet => Position.Y + FOOT_OFFSET * Scale;
 
     /// <summary>
     /// Loads the six body part textures using the provided ContentManager
@@ -170,10 +177,28 @@ public class KnightSprite
     }
 
     /// <summary>
+    /// Drops the knight down through the ledge he is standing on, but only if he is on a ledge.
+    /// The road can't be dropped through, or he would fall out of the world
+    /// </summary>
+    /// <returns>Whether the knight actually dropped</returns>
+    public bool DropThrough()
+    {
+        if (!onGround || Feet >= AshvaleGame.GROUND_Y) return false;
+
+        // Stepping his feet just past the top of the ledge means it no longer counts as being
+        // under him, so the landing check lets him fall and gravity takes over from there
+        Position.Y += Tilemap.LANDING_TOLERANCE + 1;
+        velocity.Y = 0;
+        onGround = false;
+        return true;
+    }
+
+    /// <summary>
     /// Bobs the knight gently up and down on the title screen, or falls and jumps in game
     /// </summary>
     /// <param name="gameTime">The game time</param>
-    public void Update(GameTime gameTime)
+    /// <param name="tilemap">The level, which he stands on</param>
+    public void Update(GameTime gameTime, Tilemap tilemap)
     {
         float t = (float)gameTime.ElapsedGameTime.TotalSeconds;
         JustLanded = false;
@@ -196,17 +221,24 @@ public class KnightSprite
             return;
         }
 
+        // where his feet were before this frame's move, to tell if he dropped onto a tile
+        float oldFeet = Feet;
+
         // gravity speeds up the fall a little more every frame, and the velocity moves the knight
         velocity.Y += GRAVITY * t;
         Position += velocity * t;
 
-        // landing: never let the knight sink below the ground
-        if (Position.Y >= GroundLine)
+        // Landing: if his feet passed the top of a tile on the way down, stand him on it. Gravity
+        // pulls him a little into the tile every frame, so standing still is landing again and
+        // again, and walking off the end of a ledge leaves nothing to land on, so he falls
+        bool wasOnGround = onGround;
+        onGround = false;
+        if (tilemap.TryLand(Bounds.Left, Bounds.Right, oldFeet, Feet, out float top))
         {
-            Position.Y = GroundLine;
+            Position.Y = top - FOOT_OFFSET * Scale;
             velocity.Y = 0;
-            if (!onGround) JustLanded = true;
             onGround = true;
+            if (!wasOnGround) JustLanded = true;
         }
 
         // keep his collision box inside the world, whichever way he is facing

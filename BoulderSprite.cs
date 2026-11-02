@@ -7,7 +7,7 @@ namespace Ashvale;
 
 /// <summary>
 /// A rock falling out of the sky for the knight to dodge. It speeds up as it falls and smashes
-/// when it reaches the ground, and the game then drops it again somewhere over the part of
+/// when it reaches a ledge or the road, and the game then drops it again somewhere over the part of
 /// the world the camera is looking at, so there is always something in the air. The rocks thrown from the volcano at the start of a run are EruptionSprites.
 /// </summary>
 public class BoulderSprite
@@ -135,14 +135,18 @@ public class BoulderSprite
     }
 
     /// <summary>
-    /// Moves the rock and spins it, until it hits the ground
+    /// Moves the rock and spins it, until it hits a ledge or the road
     /// </summary>
     /// <param name="gameTime">The game time</param>
-    public void Update(GameTime gameTime)
+    /// <param name="tilemap">The level, whose ledges and road stop the rock</param>
+    public void Update(GameTime gameTime, Tilemap tilemap)
     {
         if (!Active) return;
 
         float t = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        // how low the rock reached last frame, to tell if it dropped onto a tile
+        float oldBottom = position.Y + RADIUS * 0.5f;
 
         // gravity bends the rock's path downward a little more every frame
         velocity.Y += GRAVITY * t;
@@ -157,9 +161,14 @@ public class BoulderSprite
             animationTimer -= ANIMATION_SPEED;
         }
 
-        // it smashes once its middle is just into the road, which looks like it struck
-        if (position.Y + RADIUS * 0.5f >= AshvaleGame.GROUND_Y)
+        // It smashes once its middle is just into a ledge or the road, which looks like it struck.
+        // A ledge stops it the same as the road does, so the knight can take cover under one
+        float newBottom = position.Y + RADIUS * 0.5f;
+        if (tilemap.TryLand(position.X - RADIUS * 0.5f, position.X + RADIUS * 0.5f,
+                            oldBottom, newBottom, out float top))
         {
+            // the rock moves to the spot it struck, so the game knows where to throw the debris
+            position.Y = top;
             Active = false;
             Landed = true;
         }
