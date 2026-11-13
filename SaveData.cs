@@ -5,16 +5,12 @@ using System.Text.Json;
 namespace Ashvale;
 
 /// <summary>
-/// Everything needed to pick a game back up: which level the knight is on and how many lives
-/// he has. The game writes this out to a save file whenever either one changes, and the
-/// Continue button on the title screen reads it back in and starts that level over. It only
-/// holds plain numbers in properties, so System.Text.Json can turn it into text and back
-/// without any extra setup
+/// The saved game: the level and lives
 /// </summary>
 public class SaveData
 {
     /// <summary>
-    /// Where the save file goes: in the same folder as the game itself
+    /// Where the save file goes, next to the game
     /// </summary>
     public static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "ashvale_save.json");
 
@@ -34,20 +30,19 @@ public class SaveData
     public static bool Exists => File.Exists(FilePath);
 
     /// <summary>
-    /// Writes this save out to the save file, replacing whatever was there
+    /// Writes the save file
     /// </summary>
     public void Save()
     {
-        // indented so the file is easy to read if you open it
         var options = new JsonSerializerOptions { WriteIndented = true };
         string json = JsonSerializer.Serialize(this, options);
         File.WriteAllText(FilePath, json);
     }
 
     /// <summary>
-    /// Reads the save file back in
+    /// Reads the save file
     /// </summary>
-    /// <returns>The save, or null if there isn't one or it can't be read</returns>
+    /// <returns>The save, or null if there isn't one</returns>
     public static SaveData Load()
     {
         try
@@ -66,7 +61,7 @@ public class SaveData
     }
 
     /// <summary>
-    /// Deletes the save file, once a game is won or lost and there is nothing left to continue
+    /// Deletes the save file
     /// </summary>
     public static void Delete()
     {

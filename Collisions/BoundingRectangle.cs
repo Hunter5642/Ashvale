@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 
 namespace Ashvale.Collisions;
 
@@ -25,6 +22,11 @@ public struct BoundingRectangle
     public float Top => Y;
 
     public float Bottom => Y + Height;
+
+    /// <summary>
+    /// The middle of the rectangle
+    /// </summary>
+    public Vector2 Center => new Vector2(X + Width / 2, Y + Height / 2);
 
     public BoundingRectangle(float x, float y, float width, float height)
     {

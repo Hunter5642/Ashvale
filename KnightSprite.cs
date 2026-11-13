@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -6,54 +7,73 @@ using Ashvale.Collisions;
 namespace Ashvale;
 
 /// <summary>
-/// A class representing the player's knight. The knight artwork ships
-/// as six loose body parts, so this class holds an anchor position and draws every
-/// part at a fixed offset from it. Moving the anchor moves the whole knight.
+/// The player's knight, drawn from six body parts around one position
 /// </summary>
 public class KnightSprite
 {
     /// <summary>
-    /// How much to shrink the artwork by on the title screen
+    /// The knight's size on the title screen
     /// </summary>
     private const float TITLE_SCALE = 0.75f;
 
     /// <summary>
-    /// How fast the knight drifts, in pixels per second
+    /// How fast the knight bobs on the title screen
     /// </summary>
     private const float BOB_SPEED = 20;
 
     /// <summary>
-    /// How many seconds before the knight reverses direction
+    /// Seconds between changes of bobbing direction
     /// </summary>
     private const double BOB_INTERVAL = 1.2;
 
     /// <summary>
-    /// How fast gravity speeds the knight up as he falls, in pixels per second per second
+    /// How fast gravity pulls the knight down
     /// </summary>
     private const float GRAVITY = 2000;
 
     /// <summary>
-    /// How fast the knight leaves the ground when he jumps, in pixels per second. His feet rise
-    /// about 240 pixels: enough to get from the road up onto a low ledge 200 pixels up, but not
-    /// straight onto a high ledge 320 pixels up
+    /// How fast the knight jumps. His feet rise 250 pixels
     /// </summary>
     private const float JUMP_SPEED = 1000;
 
     /// <summary>
-    /// How far below Position the knight's feet are drawn, before scaling. His right leg is
-    /// drawn 55 pixels below Position and is 200 pixels tall
+    /// How far below Position his feet are, before scaling
     /// </summary>
     private const float FOOT_OFFSET = 55 + 200;
 
     /// <summary>
-    /// The box used for collisions, before scaling, measured from Position. It covers his head,
-    /// body and legs but not his outstretched arms, so a near miss isn't a hit. Shrink the
-    /// width or height to make the game more forgiving
+    /// The collision box, before scaling, measured from Position
     /// </summary>
     private const float BOUNDS_X = -52;
     private const float BOUNDS_Y = -118;
     private const float BOUNDS_WIDTH = 161;
     private const float BOUNDS_HEIGHT = 373;
+
+    /// <summary>
+    /// Where the shield arm is drawn from Position, before scaling
+    /// </summary>
+    private static readonly Vector2 SHIELD_ARM_OFFSET = new Vector2(18, -40);
+
+    /// <summary>
+    /// The glow color of the shield
+    /// </summary>
+    private static readonly Color GLOW_COLOR = new Color(60, 170, 255);
+
+    /// <summary>
+    /// The size and brightness of each layer of the glow's halo
+    /// </summary>
+    private static readonly float[] HALO_SIZES = { 1.1f, 1.22f, 1.36f, 1.5f };
+    private static readonly float[] HALO_BRIGHTNESS = { 1f, 0.75f, 0.5f, 0.25f };
+
+    /// <summary>
+    /// Brightness of the shine over the shield
+    /// </summary>
+    private const float SHINE_BRIGHTNESS = 0.6f;
+
+    /// <summary>
+    /// How fast the glow pulses
+    /// </summary>
+    private const float PULSE_SPEED = 5;
 
     private Texture2D body;
     private Texture2D head;
@@ -62,67 +82,91 @@ public class KnightSprite
     private Texture2D leftLeg;
     private Texture2D rightLeg;
 
+    /// <summary>
+    /// A white copy of the shield arm, used for the glow
+    /// </summary>
+    private Texture2D shieldOutline;
+
     private double bobTimer;
 
     private bool movingDown = false;
 
     /// <summary>
-    /// How fast the knight is moving
+    /// The knight's velocity
     /// </summary>
     private Vector2 velocity;
 
     /// <summary>
-    /// True while the knight is standing on the ground, so he can't jump in midair
+    /// Whether the knight is on the ground
     /// </summary>
     private bool onGround;
 
     /// <summary>
-    /// True for the one frame the knight touches down from a jump, so the game can kick up dust
+    /// True on the frame the knight lands
     /// </summary>
     public bool JustLanded { get; private set; }
 
     /// <summary>
-    /// The point the knight is built around
-    /// Every body part is positioned relative to this
+    /// The point the knight is drawn around
     /// </summary>
     public Vector2 Position;
 
     /// <summary>
-    /// How much to shrink the artwork by. Half the title screen size fits the play area
+    /// The knight's size
     /// </summary>
     public float Scale { get; set; } = TITLE_SCALE;
 
     /// <summary>
-    /// Which way the knight is looking
+    /// Which way the knight faces
     /// </summary>
     public bool FacingRight { get; set; }
 
     /// <summary>
-    /// Whether the knight is drifting up and down on the title screen
+    /// Whether the knight is bobbing on the title screen
     /// </summary>
     public bool Bobbing { get; set; } = true;
 
     /// <summary>
-    /// The bounding volume of the knight, which follows Position and the way he faces
+    /// Whether the shield is glowing, ready to block a rock
+    /// </summary>
+    public bool ShieldGlowing { get; set; }
+
+    /// <summary>
+    /// The middle of the knight's shield
+    /// </summary>
+    public Vector2 ShieldCenter =>
+        Position + (PartOffset(rightArm, SHIELD_ARM_OFFSET) + new Vector2(rightArm.Width, rightArm.Height) / 2) * Scale;
+
+    /// <summary>
+    /// The knight's collision box
     /// </summary>
     public BoundingRectangle Bounds => new BoundingRectangle(
-        Position + new Vector2(FacingRight ? -(BOUNDS_X + BOUNDS_WIDTH) : BOUNDS_X, BOUNDS_Y) * Scale,
+        Position + new Vector2(BoxOffsetX, BOUNDS_Y * Scale),
         BOUNDS_WIDTH * Scale,
         BOUNDS_HEIGHT * Scale);
 
     /// <summary>
-    /// The Y value Position sits at when the knight is standing on the road. Position is
-    /// his anchor point, not his feet, so the ground line is his feet higher up
+    /// The X offset of the collision box from Position
+    /// </summary>
+    private float BoxOffsetX => (FacingRight ? -(BOUNDS_X + BOUNDS_WIDTH) : BOUNDS_X) * Scale;
+
+    /// <summary>
+    /// Flips the artwork when the knight faces right
+    /// </summary>
+    private SpriteEffects Flip => FacingRight ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+
+    /// <summary>
+    /// Where Position sits when the knight stands on the road
     /// </summary>
     private float GroundLine => AshvaleGame.GROUND_Y - FOOT_OFFSET * Scale;
 
     /// <summary>
-    /// How far down the screen the knight's feet are
+    /// Where the knight's feet are
     /// </summary>
     private float Feet => Position.Y + FOOT_OFFSET * Scale;
 
     /// <summary>
-    /// Loads the six body part textures using the provided ContentManager
+    /// Loads the body parts and makes the glow texture
     /// </summary>
     /// <param name="content">The ContentManager</param>
     public void LoadContent(ContentManager content)
@@ -133,11 +177,21 @@ public class KnightSprite
         rightArm = content.Load<Texture2D>("knight_rightarm");
         leftLeg = content.Load<Texture2D>("knight_leftleg");
         rightLeg = content.Load<Texture2D>("knight_rightleg");
+
+        // white copy of the shield arm
+        var pixels = new Color[rightArm.Width * rightArm.Height];
+        rightArm.GetData(pixels);
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            byte alpha = pixels[i].A;
+            pixels[i] = new Color(alpha, alpha, alpha, alpha);
+        }
+        shieldOutline = new Texture2D(rightArm.GraphicsDevice, rightArm.Width, rightArm.Height);
+        shieldOutline.SetData(pixels);
     }
 
     /// <summary>
-    /// Puts the knight back the way he looks on the title screen: full size, facing
-    /// right, and bobbing gently at the given spot
+    /// Puts the knight back on the title screen
     /// </summary>
     /// <param name="position">Where to put him</param>
     public void ReturnToTitle(Vector2 position)
@@ -152,9 +206,9 @@ public class KnightSprite
     }
 
     /// <summary>
-    /// Stands the knight on the ground at the given X, still and ready to play
+    /// Stands the knight on the road
     /// </summary>
-    /// <param name="x">Where along the ground to put him</param>
+    /// <param name="x">Where on the road</param>
     public void PlaceOnGround(float x)
     {
         Position = new Vector2(x, GroundLine);
@@ -163,30 +217,27 @@ public class KnightSprite
     }
 
     /// <summary>
-    /// Starts a jump, but only if the knight is standing on the ground
+    /// Jumps, if the knight is on the ground
     /// </summary>
-    /// <returns>Whether the knight actually left the ground</returns>
+    /// <returns>Whether he jumped</returns>
     public bool Jump()
     {
         if (!onGround) return false;
 
-        // Y grows downward, so an upward jump is a negative velocity
         velocity.Y = -JUMP_SPEED;
         onGround = false;
         return true;
     }
 
     /// <summary>
-    /// Drops the knight down through the ledge he is standing on, but only if he is on a ledge.
-    /// The road can't be dropped through, or he would fall out of the world
+    /// Drops the knight through the ledge he is on
     /// </summary>
-    /// <returns>Whether the knight actually dropped</returns>
+    /// <returns>Whether he dropped</returns>
     public bool DropThrough()
     {
         if (!onGround || Feet >= AshvaleGame.GROUND_Y) return false;
 
-        // Stepping his feet just past the top of the ledge means it no longer counts as being
-        // under him, so the landing check lets him fall and gravity takes over from there
+        // step just below the ledge top
         Position.Y += Tilemap.LANDING_TOLERANCE + 1;
         velocity.Y = 0;
         onGround = false;
@@ -194,10 +245,10 @@ public class KnightSprite
     }
 
     /// <summary>
-    /// Bobs the knight gently up and down on the title screen, or falls and jumps in game
+    /// Bobs the knight on the title screen, or moves him in play
     /// </summary>
     /// <param name="gameTime">The game time</param>
-    /// <param name="tilemap">The level, which he stands on</param>
+    /// <param name="tilemap">The level</param>
     public void Update(GameTime gameTime, Tilemap tilemap)
     {
         float t = (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -221,16 +272,13 @@ public class KnightSprite
             return;
         }
 
-        // where his feet were before this frame's move, to tell if he dropped onto a tile
         float oldFeet = Feet;
 
-        // gravity speeds up the fall a little more every frame, and the velocity moves the knight
+        // gravity
         velocity.Y += GRAVITY * t;
         Position += velocity * t;
 
-        // Landing: if his feet passed the top of a tile on the way down, stand him on it. Gravity
-        // pulls him a little into the tile every frame, so standing still is landing again and
-        // again, and walking off the end of a ledge leaves nothing to land on, so he falls
+        // land on a tile
         bool wasOnGround = onGround;
         onGround = false;
         if (tilemap.TryLand(Bounds.Left, Bounds.Right, oldFeet, Feet, out float top))
@@ -241,11 +289,10 @@ public class KnightSprite
             if (!wasOnGround) JustLanded = true;
         }
 
-        // keep his collision box inside the world, whichever way he is facing
-        float boxOffset = (FacingRight ? -(BOUNDS_X + BOUNDS_WIDTH) : BOUNDS_X) * Scale;
+        // keep him in the world
         Position.X = MathHelper.Clamp(Position.X,
-                                      -boxOffset,
-                                      AshvaleGame.WORLD_WIDTH - boxOffset - BOUNDS_WIDTH * Scale);
+                                      -BoxOffsetX,
+                                      AshvaleGame.WORLD_WIDTH - BoxOffsetX - BOUNDS_WIDTH * Scale);
     }
 
     /// <summary>
@@ -255,33 +302,75 @@ public class KnightSprite
     /// <param name="spriteBatch">The SpriteBatch</param>
     public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
     {
-        // Offsets are measured from Position to each part's top-left corner
+        // offsets to each part's top-left corner
         DrawPart(spriteBatch, leftArm, new Vector2(-215, -140));
         DrawPart(spriteBatch, leftLeg, new Vector2(-58, 60));
         DrawPart(spriteBatch, rightLeg, new Vector2(4, 55));
         DrawPart(spriteBatch, body, new Vector2(-52, -46));
         DrawPart(spriteBatch, head, new Vector2(-40, -118));
-        DrawPart(spriteBatch, rightArm, new Vector2(18, -40));
+        DrawPart(spriteBatch, rightArm, SHIELD_ARM_OFFSET);
     }
 
     /// <summary>
-    /// Draws a single body part at a scaled offset from the knight's position, mirrored
-    /// when the knight is facing right
+    /// Draws the glow's halo behind the shield
+    /// </summary>
+    /// <param name="gameTime">The game time</param>
+    /// <param name="spriteBatch">The SpriteBatch, using additive blending</param>
+    public void DrawShieldHalo(GameTime gameTime, SpriteBatch spriteBatch)
+    {
+        float pulse = Pulse(gameTime);
+        for (int i = 0; i < HALO_SIZES.Length; i++)
+            DrawShieldGlow(spriteBatch, HALO_SIZES[i], GLOW_COLOR * (HALO_BRIGHTNESS[i] * pulse));
+    }
+
+    /// <summary>
+    /// Draws the glow's shine over the shield
+    /// </summary>
+    /// <param name="gameTime">The game time</param>
+    /// <param name="spriteBatch">The SpriteBatch, using additive blending</param>
+    public void DrawShieldShine(GameTime gameTime, SpriteBatch spriteBatch)
+    {
+        DrawShieldGlow(spriteBatch, 1, GLOW_COLOR * (SHINE_BRIGHTNESS * Pulse(gameTime)));
+    }
+
+    /// <summary>
+    /// How strong the glow is right now
+    /// </summary>
+    private static float Pulse(GameTime gameTime)
+    {
+        return 0.8f + 0.2f * MathF.Sin((float)gameTime.TotalGameTime.TotalSeconds * PULSE_SPEED);
+    }
+
+    /// <summary>
+    /// Draws one layer of the glow
+    /// </summary>
+    /// <param name="spriteBatch">The SpriteBatch</param>
+    /// <param name="size">Its size compared to the shield</param>
+    /// <param name="color">Its color and brightness</param>
+    private void DrawShieldGlow(SpriteBatch spriteBatch, float size, Color color)
+    {
+        var origin = new Vector2(shieldOutline.Width, shieldOutline.Height) / 2;
+        spriteBatch.Draw(shieldOutline, ShieldCenter, null, color, 0f, origin, Scale * size, Flip, 0f);
+    }
+
+    /// <summary>
+    /// Draws one body part
     /// </summary>
     private void DrawPart(SpriteBatch spriteBatch, Texture2D texture, Vector2 offset)
     {
-        SpriteEffects effects = SpriteEffects.None;
+        spriteBatch.Draw(texture, Position + PartOffset(texture, offset) * Scale, null, Color.White,
+                         0f, new Vector2(0,0), Scale, Flip, 0f);
+    }
 
-        if (FacingRight)
-        {
-            // A part covers offset.X to offset.X + Width, so mirroring it about Position puts
-            // it at -(offset.X + Width). Flipping the artwork without this would scatter the
-            // parts, because each picture would mirror where it stands instead of swapping sides
-            offset.X = -(offset.X + texture.Width);
-            effects = SpriteEffects.FlipHorizontally;
-        }
-
-        spriteBatch.Draw(texture, Position + offset * Scale, null, Color.White,
-                         0f, new Vector2(0,0), Scale, effects, 0f);
+    /// <summary>
+    /// Where a body part goes from Position, mirrored when the knight faces right
+    /// </summary>
+    /// <param name="texture">The body part</param>
+    /// <param name="offset">Where it goes when he faces left</param>
+    /// <returns>Where it goes now</returns>
+    private Vector2 PartOffset(Texture2D texture, Vector2 offset)
+    {
+        if (FacingRight) offset.X = -(offset.X + texture.Width);
+        return offset;
     }
 }

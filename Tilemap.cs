@@ -8,64 +8,57 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ashvale;
 
 /// <summary>
-/// A level built out of tiles, read from a text file in the Content folder. The file holds the
-/// tileset's name, the size of one tile in the tileset, and the size of the map, then one line 
-/// of tile numbers for each row of the map, so the file looks like the level. 0 is an empty tile,
-/// and every other tile is solid: the knight and the rocks land on top of it
+/// A level made of tiles, read from a text file
 /// </summary>
 public class Tilemap
 {
     /// <summary>
-    /// How much the 16 pixel tiles are blown up by when they are drawn. The villager uses the
-    /// same scale, so their pixels match
+    /// How much the 16 pixel tiles are scaled up
     /// </summary>
     public const float SCALE = 2.5f;
 
     /// <summary>
-    /// How far below the top of a tile something can be and still land on it. After the knight
-    /// is stood on a tile, working out where his feet are can come out a hair below its top,
-    /// and without this he would slip through the floor on the next frame. Dropping through a
-    /// ledge works by stepping just past this
+    /// How far below a tile's top something still lands on it
     /// </summary>
     public const float LANDING_TOLERANCE = 1;
 
     /// <summary>
-    /// the dimensions of tiles in the tileset, and of the map in tiles
+    /// The tile size and the map size
     /// </summary>
     private int _tileWidth, _tileHeight, _mapWidth, _mapHeight;
 
     /// <summary>
-    /// the tileset texture
+    /// The tileset texture
     /// </summary>
     private Texture2D _tilesetTexture;
 
     /// <summary>
-    /// the tile info in the tileset
+    /// The tiles in the tileset
     /// </summary>
     private Rectangle[] _tiles;
 
     /// <summary>
-    /// the tile map data
+    /// The map's tiles
     /// </summary>
     private int[] _map;
 
     /// <summary>
-    /// the filename of the map file
+    /// The map file's name
     /// </summary>
     private string _filename;
 
     /// <summary>
-    /// How wide one tile is in the world, once it is scaled up
+    /// A tile's width in the world
     /// </summary>
     public float TileWidth => _tileWidth * SCALE;
 
     /// <summary>
-    /// How tall one tile is in the world, once it is scaled up
+    /// A tile's height in the world
     /// </summary>
     public float TileHeight => _tileHeight * SCALE;
 
     /// <summary>
-    /// Creates a tilemap that will be read from the given file in the Content folder
+    /// Creates a tilemap from a map file
     /// </summary>
     /// <param name="filename">The map file, like "level1.txt"</param>
     public Tilemap(string filename)
@@ -74,13 +67,12 @@ public class Tilemap
     }
 
     /// <summary>
-    /// Reads the map file, loads its tileset, and cuts the tileset up into tiles
+    /// Reads the map file and loads its tileset
     /// </summary>
-    /// <param name="content">The ContentManager to load the tileset with</param>
+    /// <param name="content">The ContentManager</param>
     public void LoadContent(ContentManager content)
     {
-        // TitleContainer finds the file next to the game, wherever the game was started from,
-        // the same way the ContentManager finds its .xnb files
+        // open the map file next to the game
         using var stream = TitleContainer.OpenStream(Path.Join(content.RootDirectory, _filename));
         using var reader = new StreamReader(stream);
         string data = reader.ReadToEnd();
@@ -95,7 +87,7 @@ public class Tilemap
         _tileWidth = int.Parse(secondLine[0]);
         _tileHeight = int.Parse(secondLine[1]);
 
-        // now we can determine our tile bounds
+        // tile bounds in the tileset
         int tilesetColumns = _tilesetTexture.Width / _tileWidth;
         int tilesetRows = _tilesetTexture.Height / _tileHeight;
         _tiles = new Rectangle[tilesetColumns * tilesetRows];
@@ -119,7 +111,7 @@ public class Tilemap
         _mapWidth = int.Parse(thirdLine[0]);
         _mapHeight = int.Parse(thirdLine[1]);
 
-        // the rest of the file is the map, one line for each row
+        // the map, one line per row
         _map = new int[_mapWidth * _mapHeight];
         for (int y = 0; y < _mapHeight; y++)
         {
@@ -132,11 +124,11 @@ public class Tilemap
     }
 
     /// <summary>
-    /// Whether the tile at a spot in the map is solid. Anything off the edges of the map is empty
+    /// Whether a tile is solid
     /// </summary>
-    /// <param name="column">Which column of the map, from the left</param>
-    /// <param name="row">Which row of the map, from the top</param>
-    /// <returns>True if something can land on this tile</returns>
+    /// <param name="column">The column</param>
+    /// <param name="row">The row</param>
+    /// <returns>Whether it is solid</returns>
     public bool IsSolid(int column, int row)
     {
         if (column < 0 || column >= _mapWidth || row < 0 || row >= _mapHeight) return false;
@@ -144,33 +136,29 @@ public class Tilemap
     }
 
     /// <summary>
-    /// Checks whether something moving down this frame dropped onto the top of a tile. Tiles
-    /// only stop things coming down onto them, so the knight can jump up through a ledge and
-    /// walk underneath one, and a ledge catches the rocks falling on it
+    /// Checks whether something falling landed on a tile this frame
     /// </summary>
-    /// <param name="left">The left edge of the thing that is falling</param>
-    /// <param name="right">The right edge of the thing that is falling</param>
-    /// <param name="oldBottom">Where its bottom edge was last frame</param>
-    /// <param name="newBottom">Where its bottom edge is now</param>
-    /// <param name="top">The top of the tile it landed on, if it landed</param>
-    /// <returns>True if it landed on a tile this frame</returns>
+    /// <param name="left">Its left edge</param>
+    /// <param name="right">Its right edge</param>
+    /// <param name="oldBottom">Its bottom edge last frame</param>
+    /// <param name="newBottom">Its bottom edge now</param>
+    /// <param name="top">The top of the tile it landed on</param>
+    /// <returns>Whether it landed</returns>
     public bool TryLand(float left, float right, float oldBottom, float newBottom, out float top)
     {
         top = 0;
 
-        // moving up never lands on anything
         if (newBottom < oldBottom) return false;
 
-        // the rows whose top edge it passed between last frame and this one
+        // rows it passed this frame
         int firstRow = (int)MathF.Ceiling((oldBottom - LANDING_TOLERANCE) / TileHeight);
         int lastRow = (int)MathF.Floor(newBottom / TileHeight);
 
-        // the columns it covers. Anything hanging past the end of the map counts as over the
-        // end tile, so a rock that drifts off the side still hits the road
+        // columns it covers, kept inside the map
         int firstColumn = Math.Clamp((int)MathF.Floor(left / TileWidth), 0, _mapWidth - 1);
         int lastColumn = Math.Clamp((int)MathF.Floor(right / TileWidth), 0, _mapWidth - 1);
 
-        // check from the top down, so the first tile found is the highest one it reached
+        // highest tile first
         for (int row = Math.Max(firstRow, 0); row <= lastRow && row < _mapHeight; row++)
         {
             for (int column = firstColumn; column <= lastColumn; column++)
@@ -186,8 +174,7 @@ public class Tilemap
     }
 
     /// <summary>
-    /// Finds every spot someone could stand: the middle of the top edge of each solid tile that
-    /// has nothing on top of it
+    /// Finds every spot on top of a solid tile
     /// </summary>
     /// <returns>Each spot, in world coordinates</returns>
     public List<Vector2> FindStandingSpots()
@@ -205,8 +192,18 @@ public class Tilemap
     }
 
     /// <summary>
-    /// Draws every tile in the map. The SpriteBatch should already be using the camera's
-    /// transform, which does the scrolling
+    /// Finds every spot on a ledge, or on the road if there are no ledges
+    /// </summary>
+    /// <returns>Each spot, in world coordinates</returns>
+    public List<Vector2> FindLedgeSpots()
+    {
+        var spots = FindStandingSpots();
+        var ledges = spots.FindAll(spot => spot.Y < AshvaleGame.GROUND_Y);
+        return ledges.Count > 0 ? ledges : spots;
+    }
+
+    /// <summary>
+    /// Draws the map
     /// </summary>
     /// <param name="gameTime">The game time</param>
     /// <param name="spriteBatch">The SpriteBatch to draw with</param>

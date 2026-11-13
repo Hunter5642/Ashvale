@@ -5,8 +5,7 @@ using Microsoft.Xna.Framework.Input;
 namespace Ashvale;
 
 /// <summary>
-/// A box with a label that can be clicked with the mouse. It is drawn by stretching a
-/// single white pixel, so it needs no artwork of its own
+/// A clickable button with a label
 /// </summary>
 public class Button
 {
@@ -16,17 +15,17 @@ public class Button
     private const int BORDER = 3;
 
     /// <summary>
-    /// The words written on the button
+    /// The label
     /// </summary>
     public string Text;
 
     /// <summary>
-    /// Where the button sits on the screen, and how big it is
+    /// Where the button is and how big it is
     /// </summary>
     public Rectangle Bounds;
 
     /// <summary>
-    /// Whether the button can be pressed. A disabled button is greyed out and ignores the mouse
+    /// Whether the button can be pressed
     /// </summary>
     public bool Enabled = true;
 
@@ -34,8 +33,8 @@ public class Button
     /// Creates a button centered on a point
     /// </summary>
     /// <param name="text">The label</param>
-    /// <param name="centerX">Where the middle of the button goes across the screen</param>
-    /// <param name="centerY">Where the middle of the button goes down the screen</param>
+    /// <param name="centerX">The X of the button's middle</param>
+    /// <param name="centerY">The Y of the button's middle</param>
     public Button(string text, int centerX, int centerY)
     {
         Text = text;
@@ -43,8 +42,7 @@ public class Button
     }
 
     /// <summary>
-    /// Whether the button was clicked this frame. The click counts on the frame the left
-    /// button goes down, so holding it down doesn't press the button again and again
+    /// Whether the button was clicked this frame
     /// </summary>
     /// <param name="currentMouseState">The mouse this frame</param>
     /// <param name="priorMouseState">The mouse last frame</param>
@@ -57,13 +55,12 @@ public class Button
     }
 
     /// <summary>
-    /// Draws the button, lit up in gold while the mouse is over it, or greyed out if it is
-    /// disabled
+    /// Draws the button, highlighted on hover and greyed out when disabled
     /// </summary>
     /// <param name="spriteBatch">The SpriteBatch to draw with</param>
     /// <param name="font">The font to write the label in</param>
-    /// <param name="pixel">A single white pixel to stretch into the box</param>
-    /// <param name="mousePosition">Where the mouse is, to tell if it is over the button</param>
+    /// <param name="pixel">A single white pixel</param>
+    /// <param name="mousePosition">Where the mouse is</param>
     public void Draw(SpriteBatch spriteBatch, SpriteFont font, Texture2D pixel, Point mousePosition)
     {
         bool hovered = Enabled && Bounds.Contains(mousePosition);

@@ -5,15 +5,12 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ashvale.Particles;
 
 /// <summary>
-/// Flakes of ash that drift down over wherever the camera is looking, spinning and swaying
-/// as they fall. Each flake is tinted its own shade of grey and is partly see-through, so
-/// they blend over each other and over the world behind them.
+/// Falling ash that drifts over the screen
 /// </summary>
 public class AshParticleSystem : ParticleSystem
 {
     /// <summary>
-    /// How far past each side of the screen flakes can start, so the wind doesn't leave a
-    /// bare strip down the left edge
+    /// How far past the left side of the screen ash can start
     /// </summary>
     private const int SPAWN_MARGIN = 250;
 
@@ -23,10 +20,9 @@ public class AshParticleSystem : ParticleSystem
     {
         textureFilename = "shard";
         minNumParticles = 0;
-        maxNumParticles = 2;
+        maxNumParticles = 1;
 
         blendState = BlendState.AlphaBlend;
-        DrawOrder = AlphaBlendDrawOrder;
     }
 
     protected override void InitializeParticle(ref Particle p, Vector2 where)
@@ -36,7 +32,7 @@ public class AshParticleSystem : ParticleSystem
         var angularVelocity = RandomHelper.NextFloat(-3, 3);
         var scale = RandomHelper.NextFloat(0.25f, 0.6f);
 
-        // anything from pale grey to near black, never fully solid
+        // grey shade and transparency
         float shade = RandomHelper.NextFloat(0.25f, 0.8f);
         var color = new Color(shade, shade, shade) * RandomHelper.NextFloat(0.45f, 0.8f);
 
@@ -48,10 +44,10 @@ public class AshParticleSystem : ParticleSystem
     {
         base.UpdateParticle(ref particle, dt);
 
-        // sway side to side as it falls, each flake out of step with the rest
+        // sway side to side
         particle.Position.X += MathF.Sin(particle.TimeSinceStart * 2 + particle.Rotation) * 20 * dt;
 
-        // once it reaches the ground it is done
+        // done at the ground
         if (particle.Position.Y > AshvaleGame.GROUND_Y) particle.TimeSinceStart = particle.Lifetime;
     }
 
@@ -59,9 +55,8 @@ public class AshParticleSystem : ParticleSystem
     {
         base.Update(gameTime);
 
-        // a thin strip just above the top of the screen, following the camera
-        if (Emitting)
-            AddParticles(new Rectangle((int)camera.ViewLeft - SPAWN_MARGIN, -20,
+        // spawn above the screen
+        AddParticles(new Rectangle((int)camera.ViewLeft - SPAWN_MARGIN, -20,
                                        AshvaleGame.WINDOW_WIDTH + SPAWN_MARGIN, 10));
     }
 }

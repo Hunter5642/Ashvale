@@ -4,19 +4,17 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ashvale.Particles;
 
 /// <summary>
-/// Glowing sparks tossed up out of the volcanoes that cool from yellow to a dull red as they
-/// fall. Additive blending makes overlapping embers add their light together, so a thick
-/// cluster glows brighter than any one spark.
+/// Glowing embers from the volcanoes
 /// </summary>
 public class EmberParticleSystem : ParticleSystem
 {
     private readonly Vector2[] mouths;
 
     /// <summary>
-    /// Constructs the embers for a set of volcanoes
+    /// Constructs the embers
     /// </summary>
-    /// <param name="game">The game this system belongs to</param>
-    /// <param name="mouths">Where each volcano's mouth is, in background coordinates</param>
+    /// <param name="game">The game</param>
+    /// <param name="mouths">Each volcano's mouth, in background coordinates</param>
     public EmberParticleSystem(Game game, Vector2[] mouths) : base(game, 600)
     {
         this.mouths = mouths;
@@ -26,16 +24,15 @@ public class EmberParticleSystem : ParticleSystem
     {
         textureFilename = "particle";
         minNumParticles = 0;
-        maxNumParticles = 2;
+        maxNumParticles = 1;
 
         blendState = BlendState.Additive;
-        DrawOrder = AdditiveBlendDrawOrder;
         parallax = ParallaxBackground.PARALLAX;
     }
 
     protected override void InitializeParticle(ref Particle p, Vector2 where)
     {
-        // anywhere in the upper half of a circle, so they always leave going up
+        // always upward
         var velocity = RandomHelper.RandomDirection(-MathHelper.Pi * 0.85f, -MathHelper.Pi * 0.15f)
                      * RandomHelper.NextFloat(60, 180);
         var acceleration = new Vector2(0, 120);
@@ -51,7 +48,7 @@ public class EmberParticleSystem : ParticleSystem
 
         float normalizedLifetime = particle.TimeSinceStart / particle.Lifetime;
 
-        // yellow-hot to orange to a dying red, then gone
+        // yellow to orange to red
         Color color = normalizedLifetime < 0.5f
             ? Color.Lerp(Color.Yellow, Color.OrangeRed, normalizedLifetime * 2)
             : Color.Lerp(Color.OrangeRed, Color.DarkRed, (normalizedLifetime - 0.5f) * 2);
@@ -62,14 +59,13 @@ public class EmberParticleSystem : ParticleSystem
     {
         base.Update(gameTime);
 
-        if (Emitting)
-            foreach (var mouth in mouths) AddParticles(mouth);
+        foreach (var mouth in mouths) AddParticles(mouth);
     }
 
     /// <summary>
-    /// Throws a big shower of embers out of one spot all at once, for an eruption
+    /// Throws a big burst of embers, for an eruption
     /// </summary>
-    /// <param name="where">Where to throw them from, in background coordinates</param>
+    /// <param name="where">Where, in background coordinates</param>
     public void Burst(Vector2 where)
     {
         for (int i = 0; i < 12; i++) AddParticles(where);

@@ -3,47 +3,47 @@ using Microsoft.Xna.Framework;
 namespace Ashvale.Particles;
 
 /// <summary>
-/// A class representing a single particle in a particle system 
+/// A single particle in a particle system
 /// </summary>
 public struct Particle
 {
     /// <summary>
-    /// The current position of the particle. Default (0,0).
+    /// The particle's position
     /// </summary>
     public Vector2 Position;
 
     /// <summary>
-    /// The current velocity of the particle. Default (0,0).
+    /// The particle's velocity
     /// </summary>
     public Vector2 Velocity;
 
     /// <summary>
-    /// The current acceleration of the particle. Default (0,0).
+    /// The particle's acceleration
     /// </summary>
     public Vector2 Acceleration;
 
     /// <summary>
-    /// The current rotation of the particle. Default 0.
+    /// The particle's rotation
     /// </summary>
     public float Rotation;
 
     /// <summary>
-    /// The current angular velocity of the particle. Default 0.
+    /// The particle's angular velocity
     /// </summary>
     public float AngularVelocity;
 
     /// <summary>
-    /// The current angular acceleration of the particle. Default 0.
+    /// The particle's angular acceleration
     /// </summary>
     public float AngularAcceleration;
 
     /// <summary>
-    /// The current scale of the particle.  Default 1.
+    /// The particle's scale
     /// </summary>
     public float Scale;
 
     /// <summary>
-    /// The current lifetime of the particle (how long it will "live").  Default 1s.
+    /// How long the particle lives
     /// </summary>
     public float Lifetime;
 
@@ -53,79 +53,36 @@ public struct Particle
     public float TimeSinceStart;
 
     /// <summary>
-    /// The current color of the particle. Default White
+    /// The particle's color
     /// </summary>
     public Color Color;
 
     /// <summary>
-    /// The color the particle was given when it started, so a fade can always work from
-    /// the original rather than darkening an already faded color a little more each frame
+    /// The color the particle started with, for fading
     /// </summary>
     public Color StartColor;
 
     /// <summary>
-    /// If this particle is still alive, and should be rendered
+    /// Whether the particle is still alive
     /// </summary>
     public bool Active => TimeSinceStart < Lifetime;
 
 
 
     /// <summary>
-    /// Sets the particle up for first use, restoring defaults
+    /// Sets the particle up, standing still and white
     /// </summary>
     public void Initialize(Vector2 where, float lifetime = 1, float scale = 1, float rotation = 0, float angularVelocity = 0, float angularAcceleration = 0)
-    {
-        this.Position = where;
-        this.Velocity = Vector2.Zero;
-        this.Acceleration = Vector2.Zero;
-        this.Rotation = rotation;
-        this.AngularVelocity = angularVelocity;
-        this.AngularAcceleration = angularAcceleration;
-        this.Scale = scale;
-        this.Color = Color.White;
-        this.StartColor = this.Color;
-        this.Lifetime = lifetime;
-        this.TimeSinceStart = 0f;
-    }
+        => Initialize(where, Vector2.Zero, Vector2.Zero, Color.White, lifetime, scale, rotation, angularVelocity, angularAcceleration);
 
     /// <summary>
-    /// Sets the particle up for first use 
-    /// </summary>
-    public void Initialize(Vector2 position, Vector2 velocity, float lifetime = 1, float scale = 1, float rotation = 0, float angularVelocity = 0, float angularAcceleration = 0)
-    {
-        this.Position = position;
-        this.Velocity = velocity;
-        this.Acceleration = Vector2.Zero;
-        this.Lifetime = lifetime;
-        this.TimeSinceStart = 0f;
-        this.Scale = scale;
-        this.Rotation = rotation;
-        this.AngularVelocity = angularVelocity;
-        this.AngularAcceleration = angularAcceleration;
-        this.Color = Color.White;
-        this.StartColor = this.Color;
-    }
-
-    /// <summary>
-    /// Sets the particle up for first use 
+    /// Sets the particle up in white
     /// </summary>
     public void Initialize(Vector2 position, Vector2 velocity, Vector2 acceleration, float lifetime = 1, float scale = 1, float rotation = 0, float angularVelocity = 0, float angularAcceleration = 0)
-    {
-        this.Position = position;
-        this.Velocity = velocity;
-        this.Acceleration = acceleration;
-        this.Lifetime = lifetime;
-        this.TimeSinceStart = 0f;
-        this.Scale = scale;
-        this.Rotation = rotation;
-        this.AngularVelocity = angularVelocity;
-        this.AngularAcceleration = angularAcceleration;
-        this.Color = Color.White;
-        this.StartColor = this.Color;
-    }
+        => Initialize(position, velocity, acceleration, Color.White, lifetime, scale, rotation, angularVelocity, angularAcceleration);
 
     /// <summary>
-    /// Sets the particle up for first use 
+    /// Sets the particle up
     /// </summary>
     public void Initialize(Vector2 position, Vector2 velocity, Vector2 acceleration, Color color, float lifetime = 1, float scale = 1, float rotation = 0, float angularVelocity = 0, float angularAcceleration = 0)
     {

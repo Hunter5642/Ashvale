@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 
 namespace Ashvale.Collisions;
 
 /// <summary>
-/// A struct represenging circular bounds
+/// A struct representing circular bounds
 /// </summary>
 public struct BoundingCircle
 {

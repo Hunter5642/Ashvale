@@ -25,25 +25,23 @@ public class AshvaleGame : Game
     };
 
     /// <summary>
-    /// The background art is 600x300 so the window is an exact 2x of it
+    /// The window size, twice the size of the background art
     /// </summary>
     public const int WINDOW_WIDTH = 1200;
     public const int WINDOW_HEIGHT = 600;
 
     /// <summary>
-    /// How wide the world the knight can run around in is. It is three screens across, and
-    /// the camera scrolls to follow him. Every level's map is 90 tiles of 40 pixels, which
-    /// fills it exactly
+    /// How wide the world is: three screens
     /// </summary>
     public const int WORLD_WIDTH = WINDOW_WIDTH * 3;
 
     /// <summary>
-    /// The top of the road, which is the bottom row of tiles in every level's map
+    /// The top of the road
     /// </summary>
     public const int GROUND_Y = 560;
 
     /// <summary>
-    /// The map file for each level, in the order they are played
+    /// The map file for each level, in order
     /// </summary>
     private static readonly string[] LEVEL_FILES = { "level1.txt", "level2.txt", "level3.txt" };
 
@@ -53,22 +51,19 @@ public class AshvaleGame : Game
     private const int VILLAGER_GOAL = 5;
 
     /// <summary>
-    /// How many lives the knight starts with, and the most he can build up to. Clearing a level
-    /// earns him one more
+    /// Lives at the start, and the most the knight can have
     /// </summary>
     private const int STARTING_LIVES = 3;
     private const int MAX_LIVES = 5;
 
     /// <summary>
-    /// How many rocks the volcano throws for show at the start, and how they are spaced out
+    /// How many rocks the opening eruption throws, and the time between them
     /// </summary>
     private const int ERUPTION_COUNT = 5;
     private const double ERUPTION_INTERVAL = 0.25;
 
     /// <summary>
-    /// How many rocks fall at once at the start of the first level, how many more each later
-    /// level starts with, how many more join for every villager rescued, and the most there
-    /// can ever be. Each level starts gentle and gets busier toward the last villager
+    /// Rocks falling at the start, extra rocks per level and per rescue, and the most at once
     /// </summary>
     private const int STARTING_ROCKS = 3;
     private const int ROCKS_PER_LEVEL = 1;
@@ -76,8 +71,12 @@ public class AshvaleGame : Game
     private const int MAX_ROCKS = 8;
 
     /// <summary>
-    /// How long the knight gets to move before the first rock arrives, and how far apart
-    /// the rest follow
+    /// Rescues needed before the shield power-up appears
+    /// </summary>
+    private const int SHIELD_AFTER_RESCUES = 2;
+
+    /// <summary>
+    /// Time before the first rock falls, and between the rocks after it
     /// </summary>
     private const double DROP_DELAY = 1.0;
     private const double DROP_INTERVAL = 0.75;
@@ -88,41 +87,37 @@ public class AshvaleGame : Game
     private const float MOVE_SPEED = 300;
 
     /// <summary>
-    /// Where the knight starts, and how big he is once the game begins
+    /// Where the knight starts, and his size in play
     /// </summary>
     private const float KNIGHT_START_X = 80;
     private const float PLAY_SCALE = 0.375f;
 
     /// <summary>
-    /// Where the knight stands on the title screen. He sits left of center, facing the
-    /// column of buttons on the right
+    /// Where the knight and the buttons are on the title screen
     /// </summary>
     private const float TITLE_KNIGHT_X = 380;
     private const float TITLE_KNIGHT_Y = WINDOW_HEIGHT / 2 + 40;
     private const int TITLE_BUTTONS_X = 860;
 
     /// <summary>
-    /// How loud the music plays, and how far it drops when a run ends so the win or
-    /// loss sound stands out over it
+    /// Music volume, normally and while the win or loss sound plays
     /// </summary>
     private const float MUSIC_VOLUME = 0.5f;
     private const float MUSIC_DUCKED_VOLUME = 0.2f;
 
     /// <summary>
-    /// How far the camera zooms in on the volcano while it erupts at the start of a run,
-    /// and on the knight when a run ends
+    /// Camera zoom for the opening eruption and the end of a run
     /// </summary>
     private const float INTRO_ZOOM = 1.4f;
     private const float ENDING_ZOOM = 1.2f;
 
     /// <summary>
-    /// How often a firework goes off once the run is won
+    /// Time between victory fireworks
     /// </summary>
     private const double FIREWORK_INTERVAL = 0.35;
 
     /// <summary>
-    /// The strip across the top of the screen that shows the whole world, where the knight
-    /// is in it, and where the villager is
+    /// The minimap across the top of the screen
     /// </summary>
     private static readonly Rectangle MINIMAP = new Rectangle(WINDOW_WIDTH / 2 - 200, 72, 400, 10);
 
@@ -131,7 +126,7 @@ public class AshvaleGame : Game
 
     private SpriteFont medievalSharp;
     /// <summary>
-    /// A smaller copy of the same font, for the longer text on the settings screens
+    /// A smaller copy of the font, for longer text
     /// </summary>
     private SpriteFont medievalSharpSmall;
     private KnightSprite knight;
@@ -139,17 +134,21 @@ public class AshvaleGame : Game
     private BoulderSprite[] boulders;
     private EruptionSprite[] eruptions;
 
+    /// <summary>
+    /// The shield power-up the knight can pick up partway through a level
+    /// </summary>
+    private ShieldPickup shield;
+
     private Camera camera;
     private ParallaxBackground background;
 
     /// <summary>
-    /// The level being played: its road and ledges
+    /// The level being played
     /// </summary>
     private Tilemap tilemap;
 
     /// <summary>
-    /// The particle effects. The game draws these itself, in among the other layers, rather
-    /// than letting them draw on top of everything after the menus
+    /// The particle effects, drawn by the game between its layers
     /// </summary>
     private EmberParticleSystem embers;
     private AshParticleSystem ash;
@@ -167,7 +166,7 @@ public class AshvaleGame : Game
     private SoundEffect clickSound;
 
     /// <summary>
-    /// The buttons on the title screen. Continue is greyed out when there is no save file
+    /// The title screen buttons
     /// </summary>
     private Button continueButton;
     private Button newGameButton;
@@ -181,8 +180,7 @@ public class AshvaleGame : Game
     private Button howToPlayButton;
 
     /// <summary>
-    /// Sits at the bottom of the settings, controls and how to play screens, and goes
-    /// back one screen from whichever one is showing
+    /// The back button on the settings, controls and how to play screens
     /// </summary>
     private Button backButton;
 
@@ -192,8 +190,7 @@ public class AshvaleGame : Game
     private Button beginButton;
 
     /// <summary>
-    /// The buttons shown when a level ends: Next Level once it is cleared, Try Again after a
-    /// hit, Play Again once the game is won or lost, and Main Menu on all of them
+    /// The buttons shown when a level ends
     /// </summary>
     private Button nextLevelButton;
     private Button tryAgainButton;
@@ -201,7 +198,7 @@ public class AshvaleGame : Game
     private Button mainMenuButton;
 
     /// <summary>
-    /// A single white pixel, stretched out to dim or light up the whole screen
+    /// A single white pixel, stretched for boxes and overlays
     /// </summary>
     private Texture2D whitePixel;
 
@@ -212,7 +209,7 @@ public class AshvaleGame : Game
     private string winText = "You Win!";
 
     /// <summary>
-    /// The story shown before each level, as pairs of the level's name and the text under it
+    /// Each level's name and story
     /// </summary>
     private string[,] story =
     {
@@ -231,12 +228,12 @@ public class AshvaleGame : Game
     };
 
     /// <summary>
-    /// Shown under the win message once the last level is cleared
+    /// Shown under the win message
     /// </summary>
     private string endingText = "Every villager made it safely behind the castle walls.";
 
     /// <summary>
-    /// Each thing the player can do, and the key or button that does it
+    /// Each action and the key that does it
     /// </summary>
     private string[,] controls =
     {
@@ -250,7 +247,7 @@ public class AshvaleGame : Game
     };
 
     /// <summary>
-    /// The how to play screen, as pairs of a heading and the text under it
+    /// Each how to play heading and its text
     /// </summary>
     private string[,] howToPlay =
     {
@@ -259,7 +256,8 @@ public class AshvaleGame : Game
         { "What Happens",
           "Each level opens with an eruption, and then rocks rain from the sky.\n" +
           "The villagers wait up on the ledges. Jump up through a ledge to land on it,\n" +
-          "press Down to drop back through, and shelter under one when the rocks come." },
+          "press Down to drop back through, and shelter under one when the rocks come.\n" +
+          $"After {SHIELD_AFTER_RESCUES} rescues a shield appears. Grab it and your shield blocks one rock." },
         { "Winning and Losing",
           $"Rescue {VILLAGER_GOAL} villagers to clear a level, and clear all {LEVEL_FILES.Length} levels to win.\n" +
           $"A falling rock costs a life. You start with {STARTING_LIVES} and earn 1 more per level.\n" +
@@ -269,42 +267,41 @@ public class AshvaleGame : Game
     private State gameState = State.Title;
 
     /// <summary>
-    /// Which level is being played, counting from 0, and how many lives the knight has left
+    /// The current level, counting from 0, and lives left
     /// </summary>
     private int level;
     private int lives;
 
     /// <summary>
-    /// How many villagers have been rescued so far on this level
+    /// Villagers rescued on this level
     /// </summary>
     private int villagersRescued;
 
     /// <summary>
-    /// Whether clearing the last level earned an extra life, for the level complete screen
+    /// Whether clearing the level earned an extra life
     /// </summary>
     private bool gainedLife;
 
     /// <summary>
-    /// How much of the opening eruption has been thrown, and the timer between throws
+    /// Rocks thrown in the opening eruption so far, and the timer between throws
     /// </summary>
     private int eruptedRocks;
     private double eruptionTimer;
 
     /// <summary>
-    /// How long the knight has been free to move, how many rocks have been dropped on him
-    /// so far, and the timer between drops
+    /// Time the knight has been free to move, rocks dropped so far, and the timer between drops
     /// </summary>
     private double playTimer;
     private int droppedRocks;
     private double dropTimer;
 
     /// <summary>
-    /// Whether the knight has moved yet this run, which hides the reminder of the goal
+    /// Whether the knight has moved yet this run
     /// </summary>
     private bool hasMoved;
 
     /// <summary>
-    /// Counts down to the next victory firework
+    /// Countdown to the next firework
     /// </summary>
     private double fireworkTimer;
 
@@ -324,9 +321,12 @@ public class AshvaleGame : Game
 
     protected override void Initialize()
     {
-        // Match the window to twice the background's size so it scales evenly
+        // set the window size
         _graphics.PreferredBackBufferWidth = WINDOW_WIDTH;
         _graphics.PreferredBackBufferHeight = WINDOW_HEIGHT;
+
+        // depth buffer for the 3D model
+        _graphics.PreferredDepthStencilFormat = DepthFormat.Depth24;
         _graphics.ApplyChanges();
 
         camera = new Camera(random);
@@ -369,12 +369,14 @@ public class AshvaleGame : Game
 
         villager = new VillagerSprite(random);
 
-        // every rock a level could ever need is made up front, and they join in as villagers are rescued
+        // every rock a level could need
         boulders = new BoulderSprite[MAX_ROCKS];
         for (int i = 0; i < boulders.Length; i++) boulders[i] = new BoulderSprite(random);
 
         eruptions = new EruptionSprite[ERUPTION_COUNT];
         for (int i = 0; i < eruptions.Length; i++) eruptions[i] = new EruptionSprite(random);
+
+        shield = new ShieldPickup(random);
 
         base.Initialize();
     }
@@ -389,10 +391,12 @@ public class AshvaleGame : Game
         knight.LoadContent(Content);
         villager.LoadContent(Content);
 
-        // the title screen shows the first level's road behind the menu
+        // first level's road behind the title screen
         LoadLevel(0);
         foreach (var boulder in boulders) boulder.LoadContent(Content);
         foreach (var eruption in eruptions) eruption.LoadContent(Content);
+
+        shield.SetModel(new ShieldModel(GraphicsDevice));
 
         whitePixel = new Texture2D(GraphicsDevice, 1, 1);
         whitePixel.SetData(new[] { Color.White });
@@ -404,7 +408,7 @@ public class AshvaleGame : Game
         winSound = Content.Load<SoundEffect>("win");
         clickSound = Content.Load<SoundEffect>("click");
 
-        // The music starts on the title screen and loops for as long as the game is open
+        // music loops the whole game
         music = Content.Load<Song>("music");
         MediaPlayer.IsRepeating = true;
         MediaPlayer.Volume = MUSIC_VOLUME;
@@ -419,7 +423,7 @@ public class AshvaleGame : Game
         if (currentKeyboardState.IsKeyDown(Keys.Escape))
             Exit();
 
-        // M silences the music and sound effects together, and brings them back
+        // M mutes and unmutes everything
         if (currentKeyboardState.IsKeyDown(Keys.M) && priorKeyboardState.IsKeyUp(Keys.M))
         {
             MediaPlayer.IsMuted = !MediaPlayer.IsMuted;
@@ -428,8 +432,7 @@ public class AshvaleGame : Game
 
         camera.Update(gameTime);
 
-        // Each screen only listens to its own buttons. A click that changes the screen is
-        // over by the next frame, so it never presses a button on the new screen too
+        // each screen only checks its own buttons
         switch (gameState)
         {
             case State.Title:
@@ -460,11 +463,11 @@ public class AshvaleGame : Game
                 break;
 
             case State.LevelComplete:
-                // the knight keeps falling if he was mid-jump when the level ended
+                // the knight finishes any jump
                 knight.Update(gameTime, tilemap);
                 if (Clicked(nextLevelButton))
                 {
-                    // the next map is only loaded now, so it doesn't swap in behind this screen
+                    // load the next map
                     LoadLevel(level);
                     gameState = State.Story;
                 }
@@ -493,7 +496,7 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Whether the given button was clicked this frame, playing the click sound if it was
+    /// Whether a button was clicked this frame, playing the click sound if so
     /// </summary>
     /// <param name="button">The button to check</param>
     private bool Clicked(Button button)
@@ -505,8 +508,7 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Goes back to the title screen, with the knight standing where he does there, the
-    /// first level's road behind him, and the music back up to full volume
+    /// Goes back to the title screen
     /// </summary>
     private void ReturnToTitle()
     {
@@ -516,7 +518,6 @@ public class AshvaleGame : Game
         camera.Reset();
         LoadLevel(0);
 
-        // a game that was won or lost on the way here has deleted its save
         continueButton.Enabled = SaveData.Exists;
     }
 
@@ -528,17 +529,16 @@ public class AshvaleGame : Game
     {
         tilemap = new Tilemap(LEVEL_FILES[index]);
         tilemap.LoadContent(Content);
+        debris.Tilemap = tilemap;
     }
 
     /// <summary>
-    /// Starts a whole new game from the first level, replacing any save file, and shows the
-    /// first level's story
+    /// Starts a new game from the first level
     /// </summary>
     private void NewGame()
     {
         level = 0;
         lives = STARTING_LIVES;
-        villagersRescued = 0;
         SaveGame();
 
         LoadLevel(level);
@@ -546,23 +546,21 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Picks up a saved game with the lives it had, and shows the story of the level it was on.
-    /// The level starts over, so no villagers are rescued yet
+    /// Continues the saved game from the start of its level
     /// </summary>
     private void ContinueGame()
     {
         SaveData save = SaveData.Load();
         if (save == null)
         {
-            // the file couldn't be read, so there is nothing to continue
+            // the save couldn't be read
             continueButton.Enabled = false;
             return;
         }
 
-        // keep the numbers in range, in case the file was changed by hand
+        // keep the saved numbers in range
         level = MathHelper.Clamp(save.Level, 0, LEVEL_FILES.Length - 1);
         lives = MathHelper.Clamp(save.Lives, 1, MAX_LIVES);
-        villagersRescued = 0;
 
         LoadLevel(level);
         gameState = State.Story;
@@ -582,35 +580,32 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Puts everything back to its starting state and begins the current level. Trying again
-    /// after a hit and continuing a saved game come through here too
+    /// Starts the current level from the beginning
     /// </summary>
     private void StartLevel()
     {
         gameState = State.Playing;
 
-        // the music comes back up if the last level ended with it turned down
         MediaPlayer.Volume = MUSIC_VOLUME;
 
-        // the knight stops drifting, shrinks to playing size, and stands at the bottom left
+        // knight to playing size, on the ground at the start
         knight.Bobbing = false;
         knight.Scale = PLAY_SCALE;
         knight.FacingRight = true;
         knight.PlaceOnGround(KNIGHT_START_X);
 
-        // the first villager of a level is always off to the right, on the road, so the opening
-        // move is a run for them
         villager.MoveToFirstSpot();
 
-        // Back to the start of the world, zoomed in on the volcano for the eruption. The
-        // background scrolls at half speed but the camera starts at 0, so the volcano's
-        // background position is also where it is on screen
+        // back to the start, zoomed in on the volcano
         camera.Reset();
         camera.SnapZoom(INTRO_ZOOM, ParallaxBackground.VolcanoMouths[0]);
 
         foreach (var boulder in boulders) boulder.Reset();
         foreach (var eruption in eruptions) eruption.Reset();
+        shield.Reset();
+        knight.ShieldGlowing = false;
 
+        villagersRescued = 0;
         hasMoved = false;
         eruptedRocks = 0;
         eruptionTimer = 0;
@@ -620,15 +615,14 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Updates a run in progress. A run opens with the volcano erupting while the knight
-    /// watches, then he is free to move, and a second later rocks start falling on him
+    /// Updates a level in progress
     /// </summary>
     /// <param name="gameTime">The game time</param>
     private void UpdatePlaying(GameTime gameTime)
     {
         float t = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        // The volcano throws its rocks one at a time. The knight is held still until it's done
+        // opening eruption, one rock at a time
         if (eruptedRocks < eruptions.Length)
         {
             eruptionTimer += gameTime.ElapsedGameTime.TotalSeconds;
@@ -641,7 +635,7 @@ public class AshvaleGame : Game
                 eruptedRocks++;
                 eruptionTimer -= ERUPTION_INTERVAL;
 
-                // with the last rock thrown, pull back out to the whole scene
+                // zoom back out after the last rock
                 if (eruptedRocks == eruptions.Length) camera.TargetZoom = 1;
             }
         }
@@ -649,7 +643,7 @@ public class AshvaleGame : Game
         {
             playTimer += gameTime.ElapsedGameTime.TotalSeconds;
 
-            // the knight turns to face the way he is running, and keeps facing that way when he stops
+            // run left or right
             if (currentKeyboardState.IsKeyDown(Keys.Left) || currentKeyboardState.IsKeyDown(Keys.A))
             {
                 knight.Position += new Vector2(-MOVE_SPEED * t, 0);
@@ -664,13 +658,11 @@ public class AshvaleGame : Game
             }
             if (currentKeyboardState.IsKeyDown(Keys.Space) && priorKeyboardState.IsKeyUp(Keys.Space))
             {
-                // pressing jump in mid-air does nothing, so it shouldn't make a sound either
                 if (knight.Jump()) jumpSound.Play();
                 hasMoved = true;
             }
 
-            // Down drops him through the ledge he is standing on. Like jumping, it takes a fresh
-            // press, so holding it down doesn't drop him through every ledge below in a row
+            // drop through a ledge
             bool downPressed = currentKeyboardState.IsKeyDown(Keys.Down) || currentKeyboardState.IsKeyDown(Keys.S);
             bool downWasPressed = priorKeyboardState.IsKeyDown(Keys.Down) || priorKeyboardState.IsKeyDown(Keys.S);
             if (downPressed && !downWasPressed)
@@ -682,9 +674,7 @@ public class AshvaleGame : Game
             camera.Follow(knight.Position.X, gameTime);
         }
 
-        // After a second of free movement, rocks begin falling, one every DROP_INTERVAL, until
-        // as many are falling as the villagers rescued so far allow. Each one recycles itself
-        // from then on, so this only has to start them off
+        // drop rocks until enough are falling
         if (playTimer > DROP_DELAY && droppedRocks < RocksAllowed())
         {
             dropTimer += gameTime.ElapsedGameTime.TotalSeconds;
@@ -692,8 +682,7 @@ public class AshvaleGame : Game
             {
                 boulders[droppedRocks].FallFromSky(camera.ViewLeft, camera.ViewRight);
 
-                // a rock that joins because of a rescue gets announced with a rumble from the
-                // volcano, so the player can tell the game just got harder
+                // rocks added by rescues come with a rumble
                 if (droppedRocks >= STARTING_ROCKS + level * ROCKS_PER_LEVEL)
                 {
                     embers.Burst(NearestVolcanoMouth());
@@ -710,58 +699,73 @@ public class AshvaleGame : Game
         villager.Update(gameTime);
         foreach (var boulder in boulders) boulder.Update(gameTime, tilemap);
         foreach (var eruption in eruptions) eruption.Update(gameTime);
+        shield.Update(gameTime);
 
-        // he can land on a ledge now, so the dust goes wherever his feet are
+        // dust where he lands
         if (knight.JustLanded) dust.Burst(new Vector2(knight.Position.X, knight.Bounds.Bottom));
 
-        // A rock that reaches a ledge or the road smashes into chips and dust and gives the
-        // screen a jolt, then goes back up to fall again over wherever the camera is now
+        // smash rocks that landed
         foreach (var boulder in boulders)
-        {
-            if (!boulder.Landed) continue;
+            if (boulder.Landed) SmashRock(boulder);
 
-            var impact = boulder.Position;
-            debris.Burst(impact);
-            dust.Burst(impact);
-            camera.Shake(1.5f, 0.15f);
-            boulder.FallFromSky(camera.ViewLeft, camera.ViewRight);
-        }
-
-        // Reaching the villager sends them off and brings the next one out, until enough of
-        // them are safe to clear the level
+        // rescue the villager
         if (knight.Bounds.CollidesWith(villager.Bounds))
         {
             villagersRescued++;
             sparkles.Burst(villager.Center, Color.Gold);
             if (villagersRescued >= VILLAGER_GOAL)
             {
-                // the last villager is rescued rather than moved, so they vanish as the level ends
                 villager.Rescued = true;
                 CompleteLevel();
                 return;
             }
             rescueSound.Play();
             villager.MoveToRandomSpot(knight.Bounds, tilemap);
+
+            // shield power-up appears
+            if (villagersRescued == SHIELD_AFTER_RESCUES)
+            {
+                shield.Appear(knight.Bounds, villager.Position, tilemap);
+                sparkles.Burst(shield.Position, Color.LightSkyBlue);
+            }
         }
 
-        // Any falling rock costs a life. The eruption rocks are scenery and never collide
+        // pick up the shield power-up
+        if (shield.Waiting && knight.Bounds.CollidesWith(shield.Bounds))
+        {
+            shield.PickUp();
+            knight.ShieldGlowing = true;
+            sparkles.Burst(shield.Position, Color.Gold);
+            sparkles.Burst(knight.ShieldCenter, Color.LightSkyBlue);
+            rescueSound.Play(0.7f, 0.5f, 0);
+        }
+
+        // a falling rock costs a life
+        bool blocked = false;
         foreach (var boulder in boulders)
         {
             if (boulder.Active && knight.Bounds.CollidesWith(boulder.Bounds))
             {
+                // the glowing shield blocks the hit
+                if (knight.ShieldGlowing || blocked)
+                {
+                    if (!blocked) BreakShield();
+                    blocked = true;
+                    SmashRock(boulder);
+                    continue;
+                }
+
                 MediaPlayer.Volume = MUSIC_DUCKED_VOLUME;
                 hitSound.Play();
 
-                Vector2 knightCenter = KnightCenter();
+                Vector2 knightCenter = knight.Bounds.Center;
                 explosions.PlaceExplosion(knightCenter);
                 debris.Burst(knightCenter);
                 camera.Shake(6, 0.4f);
                 ZoomInOnKnight();
 
-                // Trying again starts the level over, so its rescues are lost. With no lives
-                // left the game is over, and there is nothing to continue
+                // game over with no lives left
                 lives--;
-                villagersRescued = 0;
                 if (lives > 0)
                 {
                     gameState = State.Hit;
@@ -778,8 +782,30 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Ends the level once its last villager is rescued. Clearing the last level wins the game,
-    /// and any other level earns an extra life and saves the game at the start of the next one
+    /// Uses up the shield's glow after it blocks a rock
+    /// </summary>
+    private void BreakShield()
+    {
+        sparkles.Burst(knight.ShieldCenter, Color.LightSkyBlue);
+        camera.Shake(4, 0.3f);
+        hitSound.Play(0.6f, 0.6f, 0);
+        knight.ShieldGlowing = false;
+    }
+
+    /// <summary>
+    /// Smashes a rock into chips and dust and drops it again
+    /// </summary>
+    /// <param name="boulder">The rock to smash</param>
+    private void SmashRock(BoulderSprite boulder)
+    {
+        debris.Burst(boulder.Position);
+        dust.Burst(boulder.Position);
+        camera.Shake(1.5f, 0.15f);
+        boulder.FallFromSky(camera.ViewLeft, camera.ViewRight);
+    }
+
+    /// <summary>
+    /// Ends the level, or wins the game after the last one
     /// </summary>
     private void CompleteLevel()
     {
@@ -799,15 +825,13 @@ public class AshvaleGame : Game
         level++;
         gainedLife = lives < MAX_LIVES;
         lives = System.Math.Min(lives + 1, MAX_LIVES);
-        villagersRescued = 0;
         SaveGame();
     }
 
     /// <summary>
-    /// How many rocks should be falling, given the level and how many villagers have been
-    /// rescued on it
+    /// How many rocks should be falling right now
     /// </summary>
-    /// <returns>The number of rocks allowed in the air</returns>
+    /// <returns>The number of rocks</returns>
     private int RocksAllowed()
     {
         return System.Math.Min(STARTING_ROCKS + level * ROCKS_PER_LEVEL + villagersRescued * ROCKS_PER_VILLAGER,
@@ -815,14 +839,12 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Finds the volcano closest to the middle of the screen, so the rumble comes from one
-    /// the player can see
+    /// Finds the volcano nearest the middle of the screen
     /// </summary>
-    /// <returns>That volcano's mouth, in background coordinates</returns>
+    /// <returns>Its mouth, in background coordinates</returns>
     private Vector2 NearestVolcanoMouth()
     {
-        // the background scrolls at half speed, so the middle of the screen is somewhere
-        // else in background coordinates than it is in the world
+        // middle of the screen in background coordinates
         float middle = camera.Position.X * ParallaxBackground.PARALLAX + WINDOW_WIDTH / 2f;
 
         Vector2 nearest = ParallaxBackground.VolcanoMouths[0];
@@ -832,26 +854,16 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// The middle of the knight's collision box, in world coordinates
-    /// </summary>
-    private Vector2 KnightCenter()
-    {
-        var bounds = knight.Bounds;
-        return new Vector2(bounds.X + bounds.Width / 2, bounds.Y + bounds.Height / 2);
-    }
-
-    /// <summary>
-    /// Slowly closes in on the knight at the end of a run. The zoom works in screen
-    /// coordinates, so the knight's world position is turned into where he is on screen
+    /// Zooms the camera in on the knight
     /// </summary>
     private void ZoomInOnKnight()
     {
-        camera.ZoomFocus = KnightCenter() - camera.Position;
+        camera.ZoomFocus = knight.Bounds.Center - camera.Position;
         camera.TargetZoom = ENDING_ZOOM;
     }
 
     /// <summary>
-    /// Sets off a firework every so often over the screen while the win is showing
+    /// Sets off fireworks while the win is showing
     /// </summary>
     /// <param name="gameTime">The game time</param>
     private void UpdateFireworks(GameTime gameTime)
@@ -863,15 +875,14 @@ public class AshvaleGame : Game
         var where = new Vector2(random.NextFloat(camera.ViewLeft + 150, camera.ViewRight - 150),
                                 random.NextFloat(80, 300));
         var colors = SparkleParticleSystem.FireworkColors;
-        sparkles.Burst(where, colors[(int)random.NextFloat(0, colors.Length - 0.01f)]);
+        sparkles.Burst(where, colors[random.Next(colors.Length)]);
     }
 
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.Black);
 
-        // The world is drawn first, through the camera, and the menus and text go on top of
-        // it in a batch of their own that the camera doesn't move
+        // world first, then the menus and text on top
         if (gameState is State.Title or State.Playing or State.GameOver or State.Won
                       or State.LevelComplete or State.Hit)
             DrawScene(gameTime);
@@ -882,29 +893,29 @@ public class AshvaleGame : Game
         {
             case State.Title:
                 DrawCenteredText(medievalSharp, titleText, 30, Color.Gold);
-                continueButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
-                newGameButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
-                settingsButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
-                quitButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
+                DrawButton(continueButton);
+                DrawButton(newGameButton);
+                DrawButton(settingsButton);
+                DrawButton(quitButton);
                 break;
 
             case State.Settings:
                 DrawCenteredText(medievalSharp, "Settings", 60, Color.Gold);
-                controlsButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
-                howToPlayButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
-                backButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
+                DrawButton(controlsButton);
+                DrawButton(howToPlayButton);
+                DrawButton(backButton);
                 break;
 
             case State.Controls:
                 DrawCenteredText(medievalSharp, "Controls", 30, Color.Gold);
                 DrawControls();
-                backButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
+                DrawButton(backButton);
                 break;
 
             case State.HowToPlay:
                 DrawCenteredText(medievalSharp, "How to Play", 30, Color.Gold);
                 DrawHowToPlay();
-                backButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
+                DrawButton(backButton);
                 break;
 
             case State.Story:
@@ -912,7 +923,7 @@ public class AshvaleGame : Game
                 DrawCenteredText(medievalSharp, story[level, 0], 110, Color.Gold);
                 DrawCenteredText(medievalSharpSmall, story[level, 1], 220, Color.White);
                 DrawCenteredText(medievalSharpSmall, $"Lives: {lives}", 370, Color.White);
-                beginButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
+                DrawButton(beginButton);
                 break;
 
             case State.Playing:
@@ -931,31 +942,31 @@ public class AshvaleGame : Game
                 DrawCenteredText(medievalSharp, "Level Complete!", 170, Color.Gold);
                 if (gainedLife)
                     DrawCenteredText(medievalSharpSmall, "You earned an extra life!", 228, Color.White);
-                nextLevelButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
-                mainMenuButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
+                DrawButton(nextLevelButton);
+                DrawButton(mainMenuButton);
                 break;
 
             case State.Hit:
                 DrawOverlay(Color.Black * 0.6f);
                 DrawCenteredText(medievalSharp, "You were hit!", 170, Color.OrangeRed);
                 DrawCenteredText(medievalSharpSmall, $"Lives left: {lives}", 228, Color.White);
-                tryAgainButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
-                mainMenuButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
+                DrawButton(tryAgainButton);
+                DrawButton(mainMenuButton);
                 break;
 
             case State.GameOver:
                 DrawOverlay(Color.Black * 0.6f);
                 DrawCenteredText(medievalSharp, gameOverText, 170, Color.OrangeRed);
-                playAgainButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
-                mainMenuButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
+                DrawButton(playAgainButton);
+                DrawButton(mainMenuButton);
                 break;
 
             case State.Won:
                 DrawOverlay(Color.White * 0.5f);
                 DrawCenteredText(medievalSharp, winText, 170, Color.Gold);
                 DrawCenteredText(medievalSharpSmall, endingText, 228, Color.White);
-                playAgainButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
-                mainMenuButton.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
+                DrawButton(playAgainButton);
+                DrawButton(mainMenuButton);
                 break;
         }
 
@@ -967,38 +978,67 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Draws the world back to front through the camera. The background layer scrolls at
-    /// half speed with the volcano's embers on it, then the world layer scrolls at
-    /// full speed with the tilemap, villager, rocks and knight, and the effects that happen
-    /// around him go over the top
+    /// Draws a button
+    /// </summary>
+    /// <param name="button">The button to draw</param>
+    private void DrawButton(Button button)
+    {
+        button.Draw(_spriteBatch, medievalSharp, whitePixel, currentMouseState.Position);
+    }
+
+    /// <summary>
+    /// Draws the world back to front through the camera
     /// </summary>
     /// <param name="gameTime">The game time</param>
     private void DrawScene(GameTime gameTime)
     {
+        bool inPlay = gameState != State.Title;
+
         // Background layer
         _spriteBatch.Begin(transformMatrix: camera.GetTransform(ParallaxBackground.PARALLAX));
         background.Draw(_spriteBatch);
-        if (gameState != State.Title)
+        if (inPlay)
             foreach (var eruption in eruptions) eruption.Draw(gameTime, _spriteBatch);
         _spriteBatch.End();
 
         embers.Draw(gameTime);
 
-        // Pixel art layer: the tilemap and the villager, through the same camera as the world.
-        // PointClamp keeps the pixel art sharp, and stops lines showing between tiles when the
-        // camera lands between pixels. It gets its own batch because it would make the knight,
-        // who is big artwork shrunk down, look jagged
+        // pixel art layer: tilemap and villager
         _spriteBatch.Begin(transformMatrix: camera.GetTransform(), samplerState: SamplerState.PointClamp);
         tilemap.Draw(gameTime, _spriteBatch);
-        if (gameState != State.Title) villager.Draw(gameTime, _spriteBatch);
+        if (inPlay) villager.Draw(gameTime, _spriteBatch);
         _spriteBatch.End();
+
+        // 3D shield power-up, behind the knight
+        if (inPlay && shield.Waiting)
+        {
+            Graphics3D.Begin(GraphicsDevice);
+            shield.Draw(camera.GetTransform(), Graphics3D.Projection(GraphicsDevice.Viewport));
+        }
+
+        // glow halo behind the knight
+        bool glowing = inPlay && knight.ShieldGlowing;
+        if (glowing)
+        {
+            _spriteBatch.Begin(transformMatrix: camera.GetTransform(), blendState: BlendState.Additive);
+            knight.DrawShieldHalo(gameTime, _spriteBatch);
+            _spriteBatch.End();
+        }
 
         // World layer
         _spriteBatch.Begin(transformMatrix: camera.GetTransform());
-        if (gameState != State.Title)
+        if (inPlay)
             foreach (var boulder in boulders) boulder.Draw(gameTime, _spriteBatch);
         knight.Draw(gameTime, _spriteBatch);
         _spriteBatch.End();
+
+        // glow shine over the shield
+        if (glowing)
+        {
+            _spriteBatch.Begin(transformMatrix: camera.GetTransform(), blendState: BlendState.Additive);
+            knight.DrawShieldShine(gameTime, _spriteBatch);
+            _spriteBatch.End();
+        }
 
         dust.Draw(gameTime);
         debris.Draw(gameTime);
@@ -1008,8 +1048,7 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Draws the whole world shrunk down to a strip, with the part on screen lit up, a
-    /// white mark for the knight and a gold one for the villager
+    /// Draws the minimap, with marks for the knight, villager and shield power-up
     /// </summary>
     private void DrawMinimap()
     {
@@ -1021,6 +1060,12 @@ public class AshvaleGame : Game
                                  (int)(WINDOW_WIDTH * toMap), MINIMAP.Height);
         _spriteBatch.Draw(whitePixel, view, Color.White * 0.25f);
 
+        if (shield.Waiting)
+        {
+            int shieldX = MINIMAP.X + (int)(shield.Position.X * toMap);
+            _spriteBatch.Draw(whitePixel, new Rectangle(shieldX - 3, MINIMAP.Y - 3, 6, MINIMAP.Height + 6), Color.LightSkyBlue);
+        }
+
         int villagerX = MINIMAP.X + (int)(villager.Position.X * toMap);
         _spriteBatch.Draw(whitePixel, new Rectangle(villagerX - 3, MINIMAP.Y - 3, 6, MINIMAP.Height + 6), Color.Gold);
 
@@ -1029,10 +1074,9 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// When the villager is off the side of the screen, draws a pulsing arrow at that edge
-    /// pointing the way to them
+    /// Draws an arrow at the edge of the screen pointing to an off-screen villager
     /// </summary>
-    /// <param name="gameTime">The game time, which makes the arrow pulse</param>
+    /// <param name="gameTime">The game time</param>
     private void DrawVillagerPointer(GameTime gameTime)
     {
         if (villager.Rescued) return;
@@ -1052,8 +1096,7 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Draws the controls as a table, with what each one does on the left and the key
-    /// that does it on the right
+    /// Draws the controls table
     /// </summary>
     private void DrawControls()
     {
@@ -1075,11 +1118,11 @@ public class AshvaleGame : Game
     }
 
     /// <summary>
-    /// Draws each section of the how to play screen, a gold heading with its text below
+    /// Draws the how to play screen
     /// </summary>
     private void DrawHowToPlay()
     {
-        float y = 110;
+        float y = 100;
 
         for (int i = 0; i < howToPlay.GetLength(0); i++)
         {
@@ -1087,27 +1130,24 @@ public class AshvaleGame : Game
             y += medievalSharpSmall.LineSpacing;
 
             DrawCenteredText(medievalSharpSmall, howToPlay[i, 1], y, Color.White);
-            y += howToPlay[i, 1].Split('\n').Length * medievalSharpSmall.LineSpacing + 14;
+            y += howToPlay[i, 1].Split('\n').Length * medievalSharpSmall.LineSpacing + 10;
         }
     }
 
     /// <summary>
-    /// Stretches the single white pixel over the whole window in the given color, which
-    /// dims or lights up everything drawn underneath it
+    /// Tints the whole screen
     /// </summary>
-    /// <param name="color">The color to wash the screen with</param>
+    /// <param name="color">The tint color</param>
     private void DrawOverlay(Color color)
     {
         _spriteBatch.Draw(whitePixel, new Rectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT), color);
     }
 
     /// <summary>
-    /// Draws text centered across the window, one line at a time so each line is centered
-    /// on its own. A dark copy offset a few pixels acts as a drop shadow so the text stays
-    /// readable against the busy background
+    /// Draws text centered across the window, with a drop shadow
     /// </summary>
     /// <param name="font">The font to draw the text in</param>
-    /// <param name="text">The text to draw, which may run to several lines</param>
+    /// <param name="text">The text, which may be several lines</param>
     /// <param name="y">The height to start drawing at</param>
     /// <param name="color">The color to draw the text in</param>
     private void DrawCenteredText(SpriteFont font, string text, float y, Color color)

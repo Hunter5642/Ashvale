@@ -4,13 +4,12 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ashvale.Particles;
 
 /// <summary>
-/// A burst of glittering sparks. Rescuing a villager gives off a gold burst, and winning sets
-/// off fireworks in every color.
+/// Sparks for rescues and victory fireworks
 /// </summary>
 public class SparkleParticleSystem : ParticleSystem
 {
     /// <summary>
-    /// The colors the victory fireworks pick from
+    /// The firework colors
     /// </summary>
     public static readonly Color[] FireworkColors =
     {
@@ -23,7 +22,7 @@ public class SparkleParticleSystem : ParticleSystem
     };
 
     /// <summary>
-    /// The color of the burst being added right now
+    /// The color of the current burst
     /// </summary>
     private Color color;
 
@@ -36,7 +35,6 @@ public class SparkleParticleSystem : ParticleSystem
         maxNumParticles = 30;
 
         blendState = BlendState.Additive;
-        DrawOrder = AdditiveBlendDrawOrder;
     }
 
     protected override void InitializeParticle(ref Particle p, Vector2 where)
@@ -45,7 +43,7 @@ public class SparkleParticleSystem : ParticleSystem
 
         var lifetime = RandomHelper.NextFloat(0.5f, 1.0f);
 
-        // slow to a stop as they fade, with a little gravity so they droop like a firework
+        // slow to a stop and droop
         var acceleration = -velocity / lifetime + new Vector2(0, 150);
 
         var scale = RandomHelper.NextFloat(0.6f, 1.2f);
@@ -60,15 +58,15 @@ public class SparkleParticleSystem : ParticleSystem
         float normalizedLifetime = particle.TimeSinceStart / particle.Lifetime;
 
         float alpha = 4 * normalizedLifetime * (1 - normalizedLifetime);
-        // Keep this particle's color and only fade its alpha
+        // fade, keeping the color
         particle.Color = new Color(particle.Color, alpha);
     }
 
     /// <summary>
     /// Sets off a burst of sparks
     /// </summary>
-    /// <param name="where">Where to center the burst, in world coordinates</param>
-    /// <param name="burstColor">What color to make it</param>
+    /// <param name="where">Where to center the burst</param>
+    /// <param name="burstColor">Its color</param>
     public void Burst(Vector2 where, Color burstColor)
     {
         color = burstColor;

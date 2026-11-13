@@ -4,9 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ashvale.Particles;
 
 /// <summary>
-/// A fiery blast for the moment a rock hits the knight.
-/// The blobs are recolored from a white-hot core out to orange, and use additive blending
-/// so the middle of the blast, where they overlap most, burns brightest.
+/// A fiery blast when a rock hits the knight
 /// </summary>
 public class ExplosionParticleSystem : ParticleSystem
 {
@@ -19,7 +17,6 @@ public class ExplosionParticleSystem : ParticleSystem
         maxNumParticles = 25;
 
         blendState = BlendState.Additive;
-        DrawOrder = AdditiveBlendDrawOrder;
     }
 
     protected override void InitializeParticle(ref Particle p, Vector2 where)

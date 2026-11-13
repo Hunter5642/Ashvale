@@ -4,13 +4,12 @@ using Microsoft.Xna.Framework.Graphics;
 namespace Ashvale.Particles;
 
 /// <summary>
-/// Chips of rock that fly out when a boulder smashes into the ground. They tumble through
-/// the air, come to rest on the ground, and fade away there.
+/// Rock chips that fly out when a rock smashes
 /// </summary>
 public class DebrisParticleSystem : ParticleSystem
 {
     /// <summary>
-    /// The rock colors to tint each chip, so a burst isn't all one flat color
+    /// The chip colors
     /// </summary>
     private static readonly Color[] colors =
     {
@@ -22,6 +21,11 @@ public class DebrisParticleSystem : ParticleSystem
 
     private const float GRAVITY = 900;
 
+    /// <summary>
+    /// The level, for landing chips
+    /// </summary>
+    public Tilemap Tilemap { get; set; }
+
     public DebrisParticleSystem(Game game, int maxBursts) : base(game, maxBursts * 18) { }
 
     protected override void InitializeConstants()
@@ -31,7 +35,6 @@ public class DebrisParticleSystem : ParticleSystem
         maxNumParticles = 18;
 
         blendState = BlendState.AlphaBlend;
-        DrawOrder = AlphaBlendDrawOrder;
     }
 
     protected override void InitializeParticle(ref Particle p, Vector2 where)
@@ -50,26 +53,27 @@ public class DebrisParticleSystem : ParticleSystem
 
     protected override void UpdateParticle(ref Particle particle, float dt)
     {
+        float oldY = particle.Position.Y;
         base.UpdateParticle(ref particle, dt);
 
-        // landing: stop dead on the ground and stop spinning
-        if (particle.Position.Y > AshvaleGame.GROUND_Y)
+        // land on the road or a ledge
+        if (Tilemap.TryLand(particle.Position.X, particle.Position.X, oldY, particle.Position.Y, out float top))
         {
-            particle.Position.Y = AshvaleGame.GROUND_Y;
+            particle.Position.Y = top;
             particle.Velocity = Vector2.Zero;
             particle.Acceleration = Vector2.Zero;
             particle.AngularVelocity = 0;
         }
 
-        // only fade over the last third of its life, so the burst reads clearly first
+        // fade over the last third of its life
         float normalizedLifetime = particle.TimeSinceStart / particle.Lifetime;
         float alpha = MathHelper.Clamp((1 - normalizedLifetime) * 3, 0, 1);
         particle.Color = particle.StartColor * alpha;
     }
 
     /// <summary>
-    /// Sends out a burst of chips from where a rock hit
+    /// Sends out a burst of chips
     /// </summary>
-    /// <param name="where">Where the rock hit, in world coordinates</param>
+    /// <param name="where">Where the rock hit</param>
     public void Burst(Vector2 where) => AddParticles(where);
 }
